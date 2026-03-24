@@ -24,4 +24,4 @@ class LevelLeaderboardView(APIView):
         scope = request.query_params.get("scope", "all_time")
         limit = int(request.query_params.get("limit", 20))
         data = get_level_leaderboard(level_id=str(level_id), scope=scope, limit=min(max(limit, 1), 100))
-        return Response({"scope": scope, "level_id": level_id, "entries": data})
+        return Response({"scope": scope, "level_id": str(level_id), "entries": data})

@@ -30,7 +30,8 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -52,7 +53,8 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -72,7 +74,8 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     env_file:
-      - .env
+      - path: .env
+        required: false
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
     working_dir: /app/apps/web
     volumes:
