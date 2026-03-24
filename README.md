@@ -16,6 +16,16 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
+## MVP Features (Phase 0 + 1)
+
+- Auth-required sorting gameplay:
+  - register/login/logout with JWT and refresh token cookie
+  - level start with Redis-backed session token
+  - sorting move submission + server-side validation
+  - result overlay with score/stars/optimal-step diff
+- Global and per-level leaderboard endpoints.
+- Idempotent sorting level seed command for local bootstrap.
+
 ## Current Implementation Scope
 
 - Phase 0 foundation complete in repo structure and CI baseline.
@@ -36,4 +46,11 @@ Monorepo for the Algorithm Puzzle Game platform.
 
 - `workers/engine`: unit tests for sorting/pathfinding/graphs/validator.
 - `apps/api`: API/service tests.
-- `apps/web`: Vitest unit tests + Playwright E2E scaffold.
+- `apps/web`: Vitest unit tests + Playwright E2E flows.
+
+## Useful Commands
+
+- `make up`: start full stack.
+- `make api-test`: run backend tests.
+- `make web-test`: run frontend unit tests.
+- `make web-e2e`: run Playwright browser automation tests.

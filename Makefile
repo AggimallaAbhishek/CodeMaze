@@ -1,4 +1,4 @@
-.PHONY: up down logs api-test engine-test web-test lint format
+.PHONY: up down logs api-test engine-test web-test web-e2e lint format
 
 up:
 	docker compose up --build
@@ -16,7 +16,10 @@ engine-test:
 	docker compose run --rm api pytest workers/engine/tests
 
 web-test:
-	docker compose run --rm web npm run test
+	docker compose run --rm web npm run test -- --run
+
+web-e2e:
+	docker compose run --rm web npm run test:e2e
 
 lint:
 	docker compose run --rm api flake8 . && docker compose run --rm web npm run lint

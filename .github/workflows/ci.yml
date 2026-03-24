@@ -59,7 +59,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd apps/web
-          npm ci
+          npm install
 
       - name: Lint frontend
         run: |
@@ -70,6 +70,16 @@ jobs:
         run: |
           cd apps/web
           npm run test -- --run
+
+      - name: Install Playwright Browser
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: |
+          cd apps/web
+          npm run test:e2e
 
       - name: Security audit
         run: |
