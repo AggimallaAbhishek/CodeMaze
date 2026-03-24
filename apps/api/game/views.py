@@ -5,6 +5,7 @@ import logging
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -71,22 +72,52 @@ class SubmissionCreateView(APIView):
         session = get_game_session(serializer.validated_data["session_id"])
 
         if not session:
+            logger.warning(
+                "submission_rejected_expired_session",
+                extra={
+                    "request_id": getattr(request, "request_id", None),
+                    "user_id": str(request.user.id),
+                    "level_id": str(level.id),
+                    "session_id": serializer.validated_data["session_id"],
+                },
+            )
             return Response({"detail": "Invalid or expired session."}, status=status.HTTP_400_BAD_REQUEST)
 
         if session["user_id"] != str(request.user.id) or session["level_id"] != str(level.id):
+            logger.warning(
+                "submission_rejected_session_mismatch",
+                extra={
+                    "request_id": getattr(request, "request_id", None),
+                    "user_id": str(request.user.id),
+                    "level_id": str(level.id),
+                    "session_id": serializer.validated_data["session_id"],
+                },
+            )
             return Response({"detail": "Session does not belong to this user/level."}, status=status.HTTP_400_BAD_REQUEST)
 
         user_moves = serializer.validated_data["moves"]
         hints_used = serializer.validated_data["hints_used"]
         time_elapsed = serializer.validated_data["time_elapsed"]
 
-        result = validate_submission(
-            game_type=level.game_type,
-            user_moves=user_moves,
-            level_config=level.config,
-            hints_used=hints_used,
-            time_elapsed=time_elapsed,
-        )
+        try:
+            result = validate_submission(
+                game_type=level.game_type,
+                user_moves=user_moves,
+                level_config=level.config,
+                hints_used=hints_used,
+                time_elapsed=time_elapsed,
+            )
+        except ValueError as exc:
+            logger.warning(
+                "submission_rejected_unsupported_game_type",
+                extra={
+                    "request_id": getattr(request, "request_id", None),
+                    "user_id": str(request.user.id),
+                    "level_id": str(level.id),
+                    "game_type": level.game_type,
+                },
+            )
+            raise ValidationError({"detail": str(exc)}) from exc
 
         score = result["score"]
         xp_earned = max(0, score * 2)
@@ -140,6 +171,7 @@ class SubmissionCreateView(APIView):
 
         return Response(
             {
+                "submission_id": str(submission.id),
                 "score": score,
                 "stars": result["stars"],
                 "optimal_steps": result["optimal_steps"],

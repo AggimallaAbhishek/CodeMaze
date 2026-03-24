@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,18 @@ from users.models import User
 from users.serializers import PublicProfileSerializer, RegisterSerializer, UserMeSerializer
 
 logger = logging.getLogger(__name__)
+
+
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="Lax",
+        max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()),
+        path="/api/v1/auth",
+    )
 
 
 class RegisterView(generics.CreateAPIView):
@@ -28,7 +41,7 @@ class RegisterView(generics.CreateAPIView):
             "user_registered",
             extra={"request_id": getattr(request, "request_id", None), "user_id": str(user.id)},
         )
-        return Response(
+        response_payload = Response(
             {
                 "user": UserMeSerializer(user).data,
                 "access": str(refresh.access_token),
@@ -36,6 +49,8 @@ class RegisterView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED,
         )
+        _set_refresh_cookie(response_payload, str(refresh))
+        return response_payload
 
 
 class LoginView(TokenObtainPairView):
@@ -44,6 +59,9 @@ class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
+        refresh_token = response.data.get("refresh")
+        if refresh_token:
+            _set_refresh_cookie(response, refresh_token)
         logger.info(
             "login_attempt",
             extra={
@@ -60,18 +78,22 @@ class RefreshView(APIView):
     throttle_scope = "auth"
 
     def post(self, request):
-        serializer = TokenRefreshSerializer(data=request.data)
+        refresh_token = request.data.get("refresh") or request.COOKIES.get("refresh_token")
+        serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
         serializer.is_valid(raise_exception=True)
+        response = Response(serializer.validated_data)
+        if serializer.validated_data.get("refresh"):
+            _set_refresh_cookie(response, serializer.validated_data["refresh"])
         logger.info(
             "token_refresh",
             extra={"request_id": getattr(request, "request_id", None)},
         )
-        return Response(serializer.validated_data)
+        return response
 
 
 class LogoutView(APIView):
     def post(self, request):
-        refresh_token = request.data.get("refresh")
+        refresh_token = request.data.get("refresh") or request.COOKIES.get("refresh_token")
         if not refresh_token:
             return Response({"detail": "refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -81,7 +103,9 @@ class LogoutView(APIView):
             "logout",
             extra={"request_id": getattr(request, "request_id", None), "user_id": str(request.user.id)},
         )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie("refresh_token", path="/api/v1/auth")
+        return response
 
 
 class MeView(generics.RetrieveUpdateAPIView):
