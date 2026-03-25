@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -220,24 +220,37 @@ class LoginView(TokenObtainPairView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
+        except APIException:
+            if email:
+                attempts = _record_login_failure(failure_key)
+                logger.warning(
+                    "login_failed",
+                    extra={
+                        "request_id": getattr(request, "request_id", None),
+                        "email": email,
+                        "ip_address": ip_address,
+                        "attempts": attempts,
+                    },
+                )
+            logger.info(
+                "login_attempt",
+                extra={
+                    "request_id": getattr(request, "request_id", None),
+                    "status_code": status.HTTP_401_UNAUTHORIZED,
+                    "email": email,
+                    "ip_address": ip_address,
+                },
+            )
+            raise
+
         refresh_token = response.data.get("refresh")
         if refresh_token:
             _set_refresh_cookie(response, refresh_token)
 
         if response.status_code == status.HTTP_200_OK and email:
             _clear_login_failures(failure_key)
-        elif email:
-            attempts = _record_login_failure(failure_key)
-            logger.warning(
-                "login_failed",
-                extra={
-                    "request_id": getattr(request, "request_id", None),
-                    "email": email,
-                    "ip_address": ip_address,
-                    "attempts": attempts,
-                },
-            )
 
         logger.info(
             "login_attempt",
