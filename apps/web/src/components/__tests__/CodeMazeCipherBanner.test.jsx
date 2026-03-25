@@ -22,7 +22,7 @@ describe("CodeMazeCipherBanner", () => {
     expect(cipherText.textContent).toHaveLength(8);
 
     act(() => {
-      vi.advanceTimersByTime(2200);
+      vi.advanceTimersByTime(3400);
     });
 
     expect(cipherText.textContent).toBe("CODEMAZE");

@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 
 const TARGET_TEXT = "CODEMAZE";
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const TICK_MS = 42;
-const REVEAL_STEP = 0.34;
-const LOOP_HOLD_MS = 1800;
+const SCRAMBLE_TICK_MS = 64;
+const REVEAL_INTERVAL_MS = 330;
+const LOOP_HOLD_MS = 2200;
+const START_DELAY_MS = 260;
 
 function randomCharacter() {
   const index = Math.floor(Math.random() * SCRAMBLE_CHARS.length);
   return SCRAMBLE_CHARS[index];
 }
 
-function buildFrame(iteration) {
+function buildFrame(resolvedCount) {
   return TARGET_TEXT.split("")
-    .map((char, index) => (index < iteration ? char : randomCharacter()))
+    .map((char, index) => (index < resolvedCount ? char : randomCharacter()))
     .join("");
 }
 
@@ -37,8 +38,10 @@ export default function CodeMazeCipherBanner() {
     }
 
     let active = true;
-    let intervalId = null;
-    let timeoutId = null;
+    let scrambleIntervalId = null;
+    let revealIntervalId = null;
+    let startTimeoutId = null;
+    let holdTimeoutId = null;
     let cycle = 0;
 
     const runCycle = () => {
@@ -47,40 +50,61 @@ export default function CodeMazeCipherBanner() {
       }
 
       cycle += 1;
-      let iteration = 0;
+      let resolvedCount = 0;
       console.debug("home_codemaze_cipher_cycle_started", { cycle });
+      setResolvedCount(0);
+      setDisplayText(buildFrame(0));
 
-      intervalId = window.setInterval(() => {
+      scrambleIntervalId = window.setInterval(() => {
+        if (!active) {
+          return;
+        }
+        setDisplayText(buildFrame(resolvedCount));
+      }, SCRAMBLE_TICK_MS);
+
+      revealIntervalId = window.setInterval(() => {
         if (!active) {
           return;
         }
 
-        setDisplayText(buildFrame(iteration));
-        setResolvedCount(Math.max(0, Math.min(TARGET_TEXT.length, Math.floor(iteration))));
-        iteration += REVEAL_STEP;
+        resolvedCount += 1;
+        setResolvedCount(resolvedCount);
+        setDisplayText(buildFrame(resolvedCount));
 
-        if (iteration >= TARGET_TEXT.length + REVEAL_STEP) {
-          window.clearInterval(intervalId);
-          intervalId = null;
+        if (resolvedCount >= TARGET_TEXT.length) {
+          if (revealIntervalId) {
+            window.clearInterval(revealIntervalId);
+            revealIntervalId = null;
+          }
+          if (scrambleIntervalId) {
+            window.clearInterval(scrambleIntervalId);
+            scrambleIntervalId = null;
+          }
           setDisplayText(TARGET_TEXT);
           setResolvedCount(TARGET_TEXT.length);
           console.debug("home_codemaze_cipher_cycle_completed", { cycle });
-          timeoutId = window.setTimeout(runCycle, LOOP_HOLD_MS);
+          holdTimeoutId = window.setTimeout(runCycle, LOOP_HOLD_MS);
         }
-      }, TICK_MS);
+      }, REVEAL_INTERVAL_MS);
     };
 
     setDisplayText(buildFrame(0));
     setResolvedCount(0);
-    timeoutId = window.setTimeout(runCycle, 260);
+    startTimeoutId = window.setTimeout(runCycle, START_DELAY_MS);
 
     return () => {
       active = false;
-      if (intervalId) {
-        window.clearInterval(intervalId);
+      if (scrambleIntervalId) {
+        window.clearInterval(scrambleIntervalId);
       }
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
+      if (revealIntervalId) {
+        window.clearInterval(revealIntervalId);
+      }
+      if (startTimeoutId) {
+        window.clearTimeout(startTimeoutId);
+      }
+      if (holdTimeoutId) {
+        window.clearTimeout(holdTimeoutId);
       }
     };
   }, []);
