@@ -35,7 +35,37 @@ class LevelListView(generics.ListAPIView):
         if game_type:
             queryset = queryset.filter(game_type=game_type)
         if difficulty:
-            queryset = queryset.filter(difficulty=difficulty)
+            normalized_difficulty = difficulty.strip().lower()
+            difficulty_buckets = {
+                "easy": [1, 2],
+                "medium": [3],
+                "hard": [4, 5],
+            }
+            if normalized_difficulty in difficulty_buckets:
+                queryset = queryset.filter(difficulty__in=difficulty_buckets[normalized_difficulty])
+            else:
+                try:
+                    difficulty_value = int(normalized_difficulty)
+                except ValueError as exc:
+                    logger.warning(
+                        "levels_rejected_invalid_difficulty",
+                        extra={
+                            "request_id": getattr(self.request, "request_id", None),
+                            "difficulty": difficulty,
+                        },
+                    )
+                    raise ValidationError({"difficulty": "Difficulty must be 1-5 or one of: easy, medium, hard."}) from exc
+
+                if difficulty_value < 1 or difficulty_value > 5:
+                    logger.warning(
+                        "levels_rejected_out_of_range_difficulty",
+                        extra={
+                            "request_id": getattr(self.request, "request_id", None),
+                            "difficulty": difficulty,
+                        },
+                    )
+                    raise ValidationError({"difficulty": "Difficulty must be 1-5 or one of: easy, medium, hard."})
+                queryset = queryset.filter(difficulty=difficulty_value)
         return queryset
 
 

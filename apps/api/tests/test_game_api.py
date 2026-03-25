@@ -23,6 +23,67 @@ def test_public_levels_list(client):
 
 
 @pytest.mark.django_db
+def test_public_levels_list_filters_by_numeric_difficulty(client):
+    Level.objects.create(
+        title="Easy Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "bubble", "array": [3, 2, 1]},
+        optimal_steps=3,
+        is_active=True,
+        order_index=1,
+    )
+    Level.objects.create(
+        title="Hard Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=5,
+        config={"algorithm": "quick", "array": [8, 1, 7, 2, 6]},
+        optimal_steps=4,
+        is_active=True,
+        order_index=2,
+    )
+
+    response = client.get("/api/v1/levels?game_type=sorting&difficulty=5")
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["title"] == "Hard Sorting"
+
+
+@pytest.mark.django_db
+def test_public_levels_list_filters_by_label_difficulty(client):
+    Level.objects.create(
+        title="Easy Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "bubble", "array": [3, 2, 1]},
+        optimal_steps=3,
+        is_active=True,
+        order_index=1,
+    )
+    Level.objects.create(
+        title="Medium Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=3,
+        config={"algorithm": "selection", "array": [4, 1, 3, 2]},
+        optimal_steps=3,
+        is_active=True,
+        order_index=2,
+    )
+
+    response = client.get("/api/v1/levels?game_type=sorting&difficulty=easy")
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["title"] == "Easy Sorting"
+
+
+@pytest.mark.django_db
+def test_public_levels_list_rejects_invalid_difficulty(client):
+    response = client.get("/api/v1/levels?difficulty=impossible")
+    assert response.status_code == 400
+    assert "difficulty" in response.data
+
+
+@pytest.mark.django_db
 def test_sorting_submission_flow(auth_client, user):
     level = Level.objects.create(
         title="Sorting Test",
