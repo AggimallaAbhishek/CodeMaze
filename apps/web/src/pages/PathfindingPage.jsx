@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import PathfindingGrid from "../components/PathfindingGrid";
 import ResultOverlay from "../components/ResultOverlay";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
@@ -183,7 +184,7 @@ export default function PathfindingPage() {
   }
 
   if (loadingLevel) {
-    return <section className="panel">Loading pathfinding level...</section>;
+    return <PageFeedback panel>Loading pathfinding level...</PageFeedback>;
   }
 
   return (
@@ -242,7 +243,7 @@ export default function PathfindingPage() {
       />
 
       {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="action-row">
         <button type="button" className="ghost-btn" onClick={undoStep} disabled={status !== "playing" || pathCells.length <= 1}>

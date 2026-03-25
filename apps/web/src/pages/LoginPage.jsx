@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import { getCurrentUser, loginUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -61,7 +62,7 @@ export default function LoginPage() {
           onChange={(event) => setPassword(event.target.value)}
         />
 
-        {error ? <p className="error-text">{error}</p> : null}
+        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
         <button type="submit" className="primary-btn" disabled={loading}>
           {loading ? "Signing In..." : "Sign In"}

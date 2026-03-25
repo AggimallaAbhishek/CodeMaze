@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import { getSubmissionReplay } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { buildReplayRows } from "../utils/replay";
@@ -62,7 +63,7 @@ export default function ReplayPage() {
   );
 
   if (loading) {
-    return <section className="panel">Loading replay...</section>;
+    return <PageFeedback panel>Loading replay...</PageFeedback>;
   }
 
   return (
@@ -85,7 +86,7 @@ export default function ReplayPage() {
         </div>
       </div>
 
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       {replay ? (
         <>

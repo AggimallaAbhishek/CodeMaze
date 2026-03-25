@@ -89,9 +89,9 @@ test("register, play graph traversal level, and view result overlay", async ({ p
   await expect(page).toHaveURL(/\/levels$/);
 
   await page.goto(`/levels/${levelId}/graph-traversal`);
-  await page.getByRole("button", { name: "Visit node B" }).click();
-  await page.getByRole("button", { name: "Visit node C" }).click();
-  await page.getByRole("button", { name: "Visit node D" }).click();
+  await page.getByRole("button", { name: /Visit node B/ }).click();
+  await page.getByRole("button", { name: /Visit node C/ }).click();
+  await page.getByRole("button", { name: /Visit node D/ }).click();
 
   await page.getByRole("button", { name: "Submit Traversal" }).click();
   await expect(page.getByRole("heading", { name: "Round Result" })).toBeVisible();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import { getCurrentUser, getMySubmissions } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -63,7 +64,7 @@ export default function ProfilePage() {
   }, [accessToken, updateUserProfile]);
 
   if (loading) {
-    return <section className="panel">Loading profile...</section>;
+    return <PageFeedback panel>Loading profile...</PageFeedback>;
   }
 
   return (
@@ -78,7 +79,7 @@ export default function ProfilePage() {
         </Link>
       </div>
 
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="profile-grid">
         <article className="profile-card">

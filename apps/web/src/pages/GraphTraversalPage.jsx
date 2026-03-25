@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import GraphTraversalBoard from "../components/GraphTraversalBoard";
+import PageFeedback from "../components/PageFeedback";
 import ResultOverlay from "../components/ResultOverlay";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
@@ -177,7 +178,7 @@ export default function GraphTraversalPage() {
   }
 
   if (loadingLevel) {
-    return <section className="panel">Loading graph traversal level...</section>;
+    return <PageFeedback panel>Loading graph traversal level...</PageFeedback>;
   }
 
   return (
@@ -244,7 +245,7 @@ export default function GraphTraversalPage() {
       />
 
       {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="action-row">
         <button type="button" className="ghost-btn" onClick={undoStep} disabled={status !== "playing" || visitedNodes.length <= 1}>

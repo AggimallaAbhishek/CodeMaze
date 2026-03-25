@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import GraphTraversalBoard from "../GraphTraversalBoard";
 
 describe("GraphTraversalBoard", () => {
-  it("renders nodes and allows visiting unvisited nodes", () => {
+  it("renders nodes responsively and allows visiting unvisited nodes", () => {
     const onVisitNode = vi.fn();
 
     render(
@@ -24,9 +24,13 @@ describe("GraphTraversalBoard", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: "Visit node A" })).toBeDisabled();
+    const visitedButton = screen.getByRole("button", { name: /Visit node A/ });
+    const nextButton = screen.getByRole("button", { name: /Visit node B/ });
 
-    fireEvent.click(screen.getByRole("button", { name: "Visit node B" }));
+    expect(visitedButton).toBeDisabled();
+    expect(nextButton).toHaveStyle({ left: "70%", top: "70%" });
+
+    fireEvent.click(nextButton);
     expect(onVisitNode).toHaveBeenCalledWith("B");
   });
 });

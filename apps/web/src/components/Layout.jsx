@@ -1,7 +1,11 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { logoutUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+
+function navigationLinkClass({ isActive }) {
+  return isActive ? "nav-link active" : "nav-link";
+}
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -23,16 +27,27 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <header className="top-nav">
         <Link className="brand" to="/">
           Algorithm Puzzle Lab
         </Link>
-        <nav className="menu-links">
-          <Link to="/levels">Levels</Link>
-          <Link to="/leaderboard">Leaderboard</Link>
-          {user ? <Link to="/profile">Profile</Link> : null}
+        <nav className="menu-links" aria-label="Primary">
+          <NavLink className={navigationLinkClass} to="/levels">
+            Levels
+          </NavLink>
+          <NavLink className={navigationLinkClass} to="/leaderboard">
+            Leaderboard
+          </NavLink>
+          {user ? (
+            <NavLink className={navigationLinkClass} to="/profile">
+              Profile
+            </NavLink>
+          ) : null}
         </nav>
-        <div className="account-cluster">
+        <div className="account-cluster" aria-label="Account controls">
           {user ? (
             <>
               <span className="pill">{user.username}</span>
@@ -53,7 +68,9 @@ export default function Layout({ children }) {
           )}
         </div>
       </header>
-      <main className="page-container">{children}</main>
+      <main id="main-content" className="page-container" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }

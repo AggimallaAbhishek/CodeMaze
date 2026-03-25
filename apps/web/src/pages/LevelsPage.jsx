@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import { getLevels } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -89,8 +90,8 @@ export default function LevelsPage() {
         </Link>
       </div>
 
-      {loading ? <p>Loading levels...</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {loading ? <PageFeedback>Loading levels...</PageFeedback> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="level-grid">
         {levels.map((level) => (

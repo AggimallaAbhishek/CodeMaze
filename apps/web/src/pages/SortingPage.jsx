@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import ResultOverlay from "../components/ResultOverlay";
 import SortingCanvas from "../components/SortingCanvas";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
@@ -166,7 +167,7 @@ export default function SortingPage() {
   }
 
   if (loadingLevel) {
-    return <section className="panel">Loading sorting level...</section>;
+    return <PageFeedback panel>Loading sorting level...</PageFeedback>;
   }
 
   return (
@@ -215,7 +216,7 @@ export default function SortingPage() {
       />
 
       {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="action-row">
         <button type="button" className="ghost-btn" disabled={loadingHint || status !== "playing"} onClick={handleHint}>

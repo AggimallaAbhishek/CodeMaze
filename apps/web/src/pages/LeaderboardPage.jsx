@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import PageFeedback from "../components/PageFeedback";
 import { getGlobalLeaderboard, getLevelLeaderboard, getLevels } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -128,8 +129,8 @@ export default function LeaderboardPage() {
         </div>
       ) : null}
 
-      {loading ? <p>Loading leaderboard...</p> : null}
-      {error ? <p className="error-text">{error}</p> : null}
+      {loading ? <PageFeedback>Loading leaderboard...</PageFeedback> : null}
+      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
       <div className="table-shell">
         <table>

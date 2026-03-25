@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import PageFeedback from "../components/PageFeedback";
 import { registerUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -67,7 +68,7 @@ export default function RegisterPage() {
           onChange={(event) => setPassword(event.target.value)}
         />
 
-        {error ? <p className="error-text">{error}</p> : null}
+        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
         <button type="submit" className="primary-btn" disabled={loading}>
           {loading ? "Creating Account..." : "Create Account"}
