@@ -23,8 +23,7 @@ export default function RegisterPage() {
       const response = await registerUser({ email, username, password });
       setAuthSession({
         user: response.user,
-        access: response.access,
-        refresh: response.refresh
+        access: response.access
       });
       navigate("/levels", { replace: true });
     } catch (err) {

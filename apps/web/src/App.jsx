@@ -1,9 +1,10 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import PageFeedback from "./components/PageFeedback";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { getCurrentUser, refreshAccessToken } from "./lib/apiClient";
 import { useAuthStore } from "./store/useAuthStore";
 
 const GraphTraversalPage = lazy(() => import("./pages/GraphTraversalPage"));
@@ -17,11 +18,55 @@ const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const SortingPage = lazy(() => import("./pages/SortingPage"));
 
 function HomeRedirect() {
+  const authReady = useAuthStore((state) => state.authReady);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  if (!authReady) {
+    return <PageFeedback panel>Restoring session...</PageFeedback>;
+  }
   return <Navigate to={isAuthenticated ? "/levels" : "/login"} replace />;
 }
 
 export default function App() {
+  const beginAuthBootstrap = useAuthStore((state) => state.beginAuthBootstrap);
+  const clearAuthSession = useAuthStore((state) => state.clearAuthSession);
+  const markAuthReady = useAuthStore((state) => state.markAuthReady);
+  const setAuthSession = useAuthStore((state) => state.setAuthSession);
+
+  useEffect(() => {
+    let active = true;
+    beginAuthBootstrap();
+
+    async function bootstrapAuthSession() {
+      try {
+        const auth = await refreshAccessToken();
+        if (!active) {
+          return;
+        }
+        const user = await getCurrentUser(auth.access);
+        if (!active) {
+          return;
+        }
+        console.debug("auth_bootstrap_succeeded", { userId: user.id });
+        setAuthSession({ user, access: auth.access });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        console.debug("auth_bootstrap_failed", { message: error.message });
+        if (useAuthStore.getState().isAuthenticated) {
+          markAuthReady();
+          return;
+        }
+        clearAuthSession();
+      }
+    }
+
+    bootstrapAuthSession();
+    return () => {
+      active = false;
+    };
+  }, [beginAuthBootstrap, clearAuthSession, markAuthReady, setAuthSession]);
+
   return (
     <Layout>
       <Suspense fallback={<PageFeedback panel>Loading page...</PageFeedback>}>

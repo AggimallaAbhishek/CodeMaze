@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { mockLoggedOutBootstrap } from "./support/auth";
+
 const levelId = "27a0f188-aa56-4a82-9cd6-c11b218b2b90";
 
 test("register, play pathfinding maze, and view result overlay", async ({ page }) => {
+  await mockLoggedOutBootstrap(page);
   await page.route("**/api/v1/auth/register", async (route) => {
     await route.fulfill({
       status: 201,
@@ -14,8 +17,7 @@ test("register, play pathfinding maze, and view result overlay", async ({ page }
           username: "mazeuser",
           total_xp: 0
         },
-        access: "test-access-token",
-        refresh: "test-refresh-token"
+        access: "test-access-token"
       })
     });
   });

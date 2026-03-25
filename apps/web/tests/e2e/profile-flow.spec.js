@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+import { mockLoggedOutBootstrap } from "./support/auth";
+
 test("loads profile progression and recent replays", async ({ page }) => {
+  await mockLoggedOutBootstrap(page);
   await page.route("**/api/v1/auth/register", async (route) => {
     await route.fulfill({
       status: 201,
@@ -26,8 +29,7 @@ test("loads profile progression and recent replays", async ({ page }) => {
             personal_best_count: 1
           }
         },
-        access: "test-access-token",
-        refresh: "test-refresh-token"
+        access: "test-access-token"
       })
     });
   });

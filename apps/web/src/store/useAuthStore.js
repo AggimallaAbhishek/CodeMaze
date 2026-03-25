@@ -1,58 +1,70 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: "",
-      refreshToken: "",
-      isAuthenticated: false,
-      setAuthSession: ({ user, access, refresh }) => {
-        console.debug("auth_set_session", { userId: user?.id });
-        set({
-          user,
-          accessToken: access,
-          refreshToken: refresh ?? "",
-          isAuthenticated: Boolean(access)
-        });
-      },
-      updateUserProfile: (profile) => {
-        console.debug("auth_update_profile", { userId: profile?.id });
-        set((state) => ({
-          user: state.user ? { ...state.user, ...profile } : profile
-        }));
-      },
-      mergeProgressionSnapshot: ({ totalXp, progression, awardedBadges = [] }) => {
-        set((state) => {
-          if (!state.user) {
-            return state;
-          }
+const initialState = {
+  user: null,
+  accessToken: "",
+  isAuthenticated: false,
+  authReady: false
+};
 
-          const existingBadges = Array.isArray(state.user.badges) ? state.user.badges : [];
-          const badgesByCode = new Map(existingBadges.map((badge) => [badge.code, badge]));
-          for (const badge of awardedBadges) {
-            badgesByCode.set(badge.code, badge);
-          }
-
-          return {
-            user: {
-              ...state.user,
-              total_xp: totalXp ?? state.user.total_xp,
-              progression: progression ?? state.user.progression,
-              badges: Array.from(badgesByCode.values())
-            }
-          };
-        });
-      },
-      clearAuthSession: () => {
-        console.debug("auth_clear_session");
-        set({ user: null, accessToken: "", refreshToken: "", isAuthenticated: false });
+export const useAuthStore = create((set) => ({
+  ...initialState,
+  beginAuthBootstrap: () => {
+    console.debug("auth_bootstrap_started");
+    set({ authReady: false });
+  },
+  markAuthReady: () => {
+    set({ authReady: true });
+  },
+  setAuthSession: ({ user, access }) => {
+    console.debug("auth_set_session", { userId: user?.id });
+    set({
+      user,
+      accessToken: access ?? "",
+      isAuthenticated: Boolean(access),
+      authReady: true
+    });
+  },
+  setAccessToken: (access) => {
+    console.debug("auth_set_access_token");
+    set((state) => ({
+      accessToken: access ?? "",
+      isAuthenticated: Boolean(access),
+      authReady: true,
+      user: access ? state.user : null
+    }));
+  },
+  updateUserProfile: (profile) => {
+    console.debug("auth_update_profile", { userId: profile?.id });
+    set((state) => ({
+      user: state.user ? { ...state.user, ...profile } : profile,
+      authReady: true
+    }));
+  },
+  mergeProgressionSnapshot: ({ totalXp, progression, awardedBadges = [] }) => {
+    set((state) => {
+      if (!state.user) {
+        return state;
       }
-    }),
-    {
-      name: "apg-auth-store",
-      storage: createJSONStorage(() => localStorage)
-    }
-  )
-);
+
+      const existingBadges = Array.isArray(state.user.badges) ? state.user.badges : [];
+      const badgesByCode = new Map(existingBadges.map((badge) => [badge.code, badge]));
+      for (const badge of awardedBadges) {
+        badgesByCode.set(badge.code, badge);
+      }
+
+      return {
+        user: {
+          ...state.user,
+          total_xp: totalXp ?? state.user.total_xp,
+          progression: progression ?? state.user.progression,
+          badges: Array.from(badgesByCode.values())
+        }
+      };
+    });
+  },
+  clearAuthSession: () => {
+    console.debug("auth_clear_session");
+    set({ ...initialState, authReady: true });
+  }
+}));

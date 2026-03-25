@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import { mockLoggedOutBootstrap } from "./support/auth";
+
 const levelId = "4d83b1b3-f410-4fa2-b5e7-1783eb963088";
 
 test("register, play graph traversal level, and view result overlay", async ({ page }) => {
+  await mockLoggedOutBootstrap(page);
   await page.route("**/api/v1/auth/register", async (route) => {
     await route.fulfill({
       status: 201,
@@ -14,8 +17,7 @@ test("register, play graph traversal level, and view result overlay", async ({ p
           username: "graphuser",
           total_xp: 0
         },
-        access: "test-access-token",
-        refresh: "test-refresh-token"
+        access: "test-access-token"
       })
     });
   });

@@ -11,6 +11,7 @@ from urllib.request import urlopen
 from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
+from django.middleware.csrf import get_token
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
@@ -44,6 +45,11 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         max_age=int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()),
         path="/api/v1/auth",
     )
+
+
+def _ensure_csrf_cookie(request, response: Response) -> Response:
+    get_token(request)
+    return response
 
 
 def _client_ip(request) -> str:
@@ -192,7 +198,6 @@ class RegisterView(generics.CreateAPIView):
         payload = {
             "user": UserMeSerializer(user).data,
             "access": str(refresh.access_token),
-            "refresh": str(refresh),
             "email_verification_required": not user.is_verified,
         }
         if settings.DEBUG or settings.TESTING:
@@ -200,7 +205,7 @@ class RegisterView(generics.CreateAPIView):
 
         response_payload = Response(payload, status=status.HTTP_201_CREATED)
         _set_refresh_cookie(response_payload, str(refresh))
-        return response_payload
+        return _ensure_csrf_cookie(request, response_payload)
 
 
 class LoginView(TokenObtainPairView):
@@ -252,8 +257,10 @@ class LoginView(TokenObtainPairView):
             raise
 
         refresh_token = response.data.get("refresh")
+        access_token = response.data.get("access")
+        response_payload = Response({"access": access_token}, status=response.status_code)
         if refresh_token:
-            _set_refresh_cookie(response, refresh_token)
+            _set_refresh_cookie(response_payload, refresh_token)
 
         if response.status_code == status.HTTP_200_OK and email:
             _clear_login_failures(failure_key)
@@ -267,7 +274,7 @@ class LoginView(TokenObtainPairView):
                 "ip_address": ip_address,
             },
         )
-        return response
+        return _ensure_csrf_cookie(request, response_payload)
 
 
 class RefreshView(APIView):
@@ -286,7 +293,7 @@ class RefreshView(APIView):
 
         serializer = TokenRefreshSerializer(data={"refresh": refresh_token})
         serializer.is_valid(raise_exception=True)
-        response = Response(serializer.validated_data)
+        response = Response({"access": serializer.validated_data["access"]})
         if serializer.validated_data.get("refresh"):
             _set_refresh_cookie(response, serializer.validated_data["refresh"])
         logger.info(
@@ -296,7 +303,7 @@ class RefreshView(APIView):
                 "cookie_auth": bool(cookie_refresh_token and not body_refresh_token),
             },
         )
-        return response
+        return _ensure_csrf_cookie(request, response)
 
 
 class LogoutView(APIView):
@@ -415,7 +422,6 @@ class GoogleAuthView(APIView):
             {
                 "user": UserMeSerializer(user).data,
                 "access": str(refresh.access_token),
-                "refresh": str(refresh),
             },
             status=status.HTTP_200_OK,
         )
@@ -427,4 +433,4 @@ class GoogleAuthView(APIView):
                 "user_id": str(user.id),
             },
         )
-        return response
+        return _ensure_csrf_cookie(request, response)

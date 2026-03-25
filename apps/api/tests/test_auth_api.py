@@ -14,7 +14,7 @@ def clear_auth_cache():
 
 
 @pytest.mark.django_db
-def test_register_returns_tokens_and_verification_token(client):
+def test_register_returns_access_cookie_and_verification_token(client, settings):
     response = client.post(
         "/api/v1/auth/register",
         {
@@ -27,14 +27,15 @@ def test_register_returns_tokens_and_verification_token(client):
 
     assert response.status_code == 201
     assert "access" in response.data
-    assert "refresh" in response.data
+    assert "refresh" not in response.data
     assert response.data["email_verification_required"] is True
     assert "verification_token" in response.data
     assert "refresh_token" in response.cookies
+    assert settings.CSRF_COOKIE_NAME in response.cookies
 
 
 @pytest.mark.django_db
-def test_login_returns_tokens(client, user):
+def test_login_returns_access_and_auth_cookies(client, user, settings):
     response = client.post(
         "/api/v1/auth/login",
         {
@@ -45,8 +46,9 @@ def test_login_returns_tokens(client, user):
     )
     assert response.status_code == 200
     assert "access" in response.data
-    assert "refresh" in response.data
+    assert "refresh" not in response.data
     assert "refresh_token" in response.cookies
+    assert settings.CSRF_COOKIE_NAME in response.cookies
 
 
 @pytest.mark.django_db
@@ -81,6 +83,7 @@ def test_refresh_uses_body_token_without_csrf(client, auth_tokens):
     response = client.post("/api/v1/auth/refresh", {"refresh": auth_tokens["refresh"]}, format="json")
     assert response.status_code == 200
     assert "access" in response.data
+    assert "refresh" not in response.data
 
 
 @pytest.mark.django_db
@@ -101,6 +104,7 @@ def test_refresh_cookie_flow_requires_csrf_header(client, auth_tokens, settings)
     )
     assert allowed.status_code == 200
     assert "access" in allowed.data
+    assert "refresh" not in allowed.data
 
 
 @pytest.mark.django_db
@@ -160,7 +164,7 @@ def test_email_verification_confirm_rejects_invalid_token(client):
 
 
 @pytest.mark.django_db
-def test_google_auth_creates_verified_user(client, monkeypatch):
+def test_google_auth_creates_verified_user(client, monkeypatch, settings):
     payload = {
         "email": "google-user@example.com",
         "email_verified": "true",
@@ -174,7 +178,9 @@ def test_google_auth_creates_verified_user(client, monkeypatch):
     assert response.status_code == 200
     assert response.data["user"]["email"] == payload["email"]
     assert response.data["user"]["is_verified"] is True
+    assert "refresh" not in response.data
     assert "refresh_token" in response.cookies
+    assert settings.CSRF_COOKIE_NAME in response.cookies
 
     user = User.objects.get(email=payload["email"])
     assert user.oauth_provider == User.OAuthProvider.GOOGLE

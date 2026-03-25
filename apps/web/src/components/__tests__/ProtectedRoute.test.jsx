@@ -9,14 +9,14 @@ describe("ProtectedRoute", () => {
     useAuthStore.setState({
       user: null,
       accessToken: "",
-      refreshToken: "",
-      isAuthenticated: false
+      isAuthenticated: false,
+      authReady: true
     });
   });
 
   it("redirects to login when unauthenticated", () => {
     act(() => {
-      useAuthStore.setState({ isAuthenticated: false, accessToken: "" });
+      useAuthStore.setState({ isAuthenticated: false, accessToken: "", authReady: true });
     });
 
     render(
@@ -40,7 +40,7 @@ describe("ProtectedRoute", () => {
 
   it("renders child routes when authenticated", () => {
     act(() => {
-      useAuthStore.setState({ isAuthenticated: true, accessToken: "token-1" });
+      useAuthStore.setState({ isAuthenticated: true, accessToken: "token-1", authReady: true });
     });
 
     render(
@@ -60,5 +60,30 @@ describe("ProtectedRoute", () => {
     );
 
     expect(screen.getByText("Secret Levels")).toBeInTheDocument();
+  });
+
+  it("shows a session check state until auth bootstrap completes", () => {
+    act(() => {
+      useAuthStore.setState({ isAuthenticated: false, accessToken: "", authReady: false });
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/levels"]}>
+        <Routes>
+          <Route
+            path="/levels"
+            element={
+              <ProtectedRoute>
+                <div>Secret Levels</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<h1>Login Page</h1>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText("Checking session...")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Login Page" })).not.toBeInTheDocument();
   });
 });

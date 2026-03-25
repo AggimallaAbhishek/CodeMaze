@@ -1,6 +1,23 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+import { useAuthStore } from "../store/useAuthStore";
 
-async function request(path, { method = "GET", payload, token } = {}) {
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+let refreshPromise = null;
+
+function getCsrfToken() {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  const csrfCookie = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith("csrftoken="));
+  if (!csrfCookie) {
+    return "";
+  }
+  return decodeURIComponent(csrfCookie.split("=").slice(1).join("="));
+}
+
+async function sendRequest(path, { method = "GET", payload, token, requiresCsrf = false } = {}) {
   const headers = {
     Accept: "application/json"
   };
@@ -13,13 +30,20 @@ async function request(path, { method = "GET", payload, token } = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const csrfToken = requiresCsrf ? getCsrfToken() : "";
+  if (csrfToken) {
+    headers["X-CSRFToken"] = csrfToken;
+  }
+
+  return fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
     credentials: "include",
     body: payload !== undefined ? JSON.stringify(payload) : undefined
   });
+}
 
+async function parseResponse(response) {
   if (response.status === 204) {
     return null;
   }
@@ -33,6 +57,55 @@ async function request(path, { method = "GET", payload, token } = {}) {
   return data;
 }
 
+async function performRefresh() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const response = await sendRequest("/auth/refresh", {
+        method: "POST",
+        payload: {},
+        requiresCsrf: true
+      });
+      const data = await parseResponse(response);
+      useAuthStore.getState().setAccessToken(data.access);
+      return data;
+    })();
+  }
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function request(path, { method = "GET", payload, token, skipAuthRetry = false, requiresCsrf } = {}) {
+  const resolvedToken = token ?? useAuthStore.getState().accessToken;
+  const shouldAttachCsrf = requiresCsrf ?? (path === "/auth/refresh" || path === "/auth/logout");
+  let response = await sendRequest(path, {
+    method,
+    payload,
+    token: resolvedToken,
+    requiresCsrf: shouldAttachCsrf
+  });
+
+  if (response.status === 401 && !skipAuthRetry && !path.startsWith("/auth/")) {
+    try {
+      const refreshResult = await performRefresh();
+      response = await sendRequest(path, {
+        method,
+        payload,
+        token: refreshResult.access,
+        requiresCsrf: shouldAttachCsrf
+      });
+    } catch (error) {
+      useAuthStore.getState().clearAuthSession();
+      throw error;
+    }
+  }
+
+  return parseResponse(response);
+}
+
 export function registerUser(payload) {
   return request("/auth/register", { method: "POST", payload });
 }
@@ -41,15 +114,17 @@ export function loginUser(payload) {
   return request("/auth/login", { method: "POST", payload });
 }
 
-export function refreshAccessToken(refresh) {
-  return request("/auth/refresh", { method: "POST", payload: refresh ? { refresh } : {} });
+export function refreshAccessToken() {
+  return performRefresh();
 }
 
-export function logoutUser(refresh, token) {
+export function logoutUser(token) {
   return request("/auth/logout", {
     method: "POST",
-    payload: refresh ? { refresh } : {},
-    token
+    payload: {},
+    token,
+    requiresCsrf: true,
+    skipAuthRetry: true
   });
 }
 

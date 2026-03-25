@@ -24,8 +24,7 @@ export default function LoginPage() {
       const user = await getCurrentUser(auth.access);
       setAuthSession({
         user,
-        access: auth.access,
-        refresh: auth.refresh
+        access: auth.access
       });
 
       const nextRoute = location.state?.from ?? "/levels";

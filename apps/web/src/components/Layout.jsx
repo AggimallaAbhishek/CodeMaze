@@ -11,12 +11,11 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const refreshToken = useAuthStore((state) => state.refreshToken);
   const clearAuthSession = useAuthStore((state) => state.clearAuthSession);
 
   async function handleLogout() {
     try {
-      await logoutUser(refreshToken, accessToken);
+      await logoutUser(accessToken);
     } catch (error) {
       console.debug("logout_request_failed", { message: error.message });
     } finally {
