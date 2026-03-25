@@ -114,6 +114,10 @@ export function loginUser(payload) {
   return request("/auth/login", { method: "POST", payload });
 }
 
+export function googleAuth(payload) {
+  return request("/auth/google", { method: "POST", payload });
+}
+
 export function refreshAccessToken() {
   return performRefresh();
 }

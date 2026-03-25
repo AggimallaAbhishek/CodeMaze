@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import AuthInputField from "../components/auth/AuthInputField";
 import AuthSubmitButton from "../components/auth/AuthSubmitButton";
 import PageFeedback from "../components/PageFeedback";
-import { getCurrentUser, loginUser } from "../lib/apiClient";
+import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
+import { getCurrentUser, googleAuth, loginUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,7 +55,35 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const setAuthSession = useAuthStore((state) => state.setAuthSession);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
   const particles = useMemo(() => Array.from({ length: 28 }, (_, index) => buildParticleStyles(index)), []);
+  const nextRoute = location.state?.from ?? "/levels";
+
+  const onGoogleCredential = useCallback(
+    async (credential) => {
+      console.debug("google_login_submit_started");
+      const auth = await googleAuth({ id_token: credential });
+      const user = auth.user ?? (await getCurrentUser(auth.access));
+      setAuthSession({
+        user,
+        access: auth.access
+      });
+      console.debug("google_login_submit_succeeded", { userId: user.id, redirect: nextRoute });
+      navigate(nextRoute, { replace: true });
+    },
+    [navigate, nextRoute, setAuthSession]
+  );
+
+  const onGoogleError = useCallback((message) => {
+    console.debug("google_login_submit_failed", { message });
+    setError(message);
+  }, []);
+
+  const { ready: googleReady, loading: googleLoading, start: startGoogleSignIn } = useGoogleSignIn({
+    clientId: googleClientId,
+    onCredential: onGoogleCredential,
+    onError: onGoogleError
+  });
 
   function validateForm(nextEmail, nextPassword) {
     const nextErrors = { email: "", password: "" };
@@ -98,7 +127,6 @@ export default function LoginPage() {
         access: auth.access
       });
 
-      const nextRoute = location.state?.from ?? "/levels";
       console.debug("login_submit_succeeded", { userId: user.id, redirect: nextRoute });
       navigate(nextRoute, { replace: true });
     } catch (err) {
@@ -180,16 +208,22 @@ export default function LoginPage() {
           </header>
 
           <div className="login-template-social-row">
-            <button type="button" className="login-template-social-btn" onClick={() => setError("GitHub sign-in is not configured yet.")}>
-              GH
-            </button>
-            <button type="button" className="login-template-social-btn" onClick={() => setError("Google sign-in is not configured yet.")}>
-              GG
-            </button>
-            <button type="button" className="login-template-social-btn" onClick={() => setError("Discord sign-in is not configured yet.")}>
-              DS
+            <button
+              type="button"
+              className="login-template-social-btn login-template-social-btn-google"
+              onClick={() => {
+                setError("");
+                startGoogleSignIn();
+              }}
+              disabled={loading || googleLoading}
+            >
+              {googleLoading ? "Connecting..." : "Continue with Google"}
             </button>
           </div>
+          {!googleClientId ? (
+            <p className="login-template-google-hint">Google sign-in requires `VITE_GOOGLE_CLIENT_ID` in your frontend env.</p>
+          ) : null}
+          {googleClientId && !googleReady ? <p className="login-template-google-hint">Preparing Google sign-in...</p> : null}
 
           <div className="login-template-divider">
             <span />
@@ -213,7 +247,7 @@ export default function LoginPage() {
               placeholder="player@codemaze.gg"
               icon="◎"
               error={fieldErrors.email}
-              disabled={loading}
+              disabled={loading || googleLoading}
             />
 
             <AuthInputField
@@ -231,13 +265,14 @@ export default function LoginPage() {
               placeholder="Enter your password"
               icon="L"
               error={fieldErrors.password}
-              disabled={loading}
+              disabled={loading || googleLoading}
               rightAdornment={
                 <button
                   type="button"
                   className="auth-password-toggle"
                   onClick={() => setShowPassword((value) => !value)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={loading || googleLoading}
                 >
                   {showPassword ? "HIDE" : "SHOW"}
                 </button>
@@ -251,18 +286,23 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                 />
                 <span>Remember me</span>
               </label>
-              <button type="button" className="login-template-forgot" onClick={() => setError("Forgot password flow is not configured yet.")}>
+              <button
+                type="button"
+                className="login-template-forgot"
+                onClick={() => setError("Forgot password flow is not configured yet.")}
+                disabled={loading || googleLoading}
+              >
                 Forgot password?
               </button>
             </div>
 
             {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
-            <AuthSubmitButton loading={loading} text="Enter Arena" loadingText="Signing In" />
+            <AuthSubmitButton loading={loading} text="Enter Arena" loadingText="Signing In" disabled={googleLoading} />
           </form>
         </div>
       </div>
