@@ -88,15 +88,16 @@ def test_refresh_cookie_flow_requires_csrf_header(client, auth_tokens, settings)
     client.cookies["refresh_token"] = auth_tokens["refresh"]
     client.cookies[settings.CSRF_COOKIE_NAME] = "csrf-cookie-token"
 
-    missing_csrf = client.post("/api/v1/auth/refresh", {}, format="json")
+    missing_csrf = client.post("/api/v1/auth/refresh", data="{}", content_type="application/json")
     assert missing_csrf.status_code == 400
     assert "CSRF token" in missing_csrf.data["detail"]
+    csrf_token = client.cookies[settings.CSRF_COOKIE_NAME].value
 
     allowed = client.post(
         "/api/v1/auth/refresh",
-        {},
-        format="json",
-        HTTP_X_CSRFTOKEN="csrf-cookie-token",
+        data="{}",
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
     )
     assert allowed.status_code == 200
     assert "access" in allowed.data
@@ -117,12 +118,16 @@ def test_logout_cookie_flow_requires_csrf(auth_client, auth_tokens, settings):
     missing_csrf = auth_client.post("/api/v1/auth/logout", {}, format="json")
     assert missing_csrf.status_code == 400
     assert "CSRF token" in missing_csrf.data["detail"]
+    csrf_token = auth_client.cookies[settings.CSRF_COOKIE_NAME].value
 
+    auth_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {auth_tokens['access']}",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
     allowed = auth_client.post(
         "/api/v1/auth/logout",
         {},
         format="json",
-        HTTP_X_CSRFTOKEN="csrf-cookie-token",
     )
     assert allowed.status_code == 204
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-secret")
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me-please-32chars-minimum")
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 TESTING = "pytest" in sys.modules
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")]

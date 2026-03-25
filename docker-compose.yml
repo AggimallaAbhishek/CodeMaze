@@ -34,7 +34,7 @@ services:
         required: false
     environment:
       DEBUG: ${DEBUG:-true}
-      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-key}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me-please-32chars-minimum}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0
@@ -59,7 +59,7 @@ services:
         required: false
     environment:
       DEBUG: ${DEBUG:-true}
-      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-key}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me-please-32chars-minimum}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0

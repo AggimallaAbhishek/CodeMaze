@@ -73,7 +73,13 @@ def _clear_login_failures(key: str) -> None:
 
 def _require_csrf_for_cookie_flow(request) -> None:
     cookie_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, "")
-    header_token = request.headers.get("X-CSRFToken") or request.headers.get("X-CSRF-Token") or ""
+    header_token = (
+        request.headers.get("X-CSRFToken")
+        or request.headers.get("X-CSRF-Token")
+        or request.META.get("HTTP_X_CSRFTOKEN")
+        or request.META.get("HTTP_X_CSRF_TOKEN")
+        or ""
+    )
     if not cookie_token or not header_token or not secrets.compare_digest(cookie_token, header_token):
         raise ValidationError({"detail": "CSRF token missing or invalid for cookie-based auth request."})
 

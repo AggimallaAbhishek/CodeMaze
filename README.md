@@ -16,7 +16,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
-## MVP Features (Phase 0 + 3)
+## MVP Features (Phase 0 + 4)
 
 - Auth-required sorting gameplay:
   - register/login/logout with JWT and refresh token cookie
@@ -33,6 +33,11 @@ Monorepo for the Algorithm Puzzle Game platform.
   - click-to-visit node order with undo/redo/reset
   - queue/stack teaching panel for traversal guidance
   - traversal submission with server-side canonical-order validation
+- Auth hardening:
+  - login brute-force lockout backed by cache counters
+  - refresh/logout cookie flows guarded by CSRF token checks
+  - email verification request/confirm endpoints
+  - Google ID token exchange endpoint with verified-user provisioning
 - Global and per-level leaderboard endpoints.
 - Idempotent sorting + pathfinding + graph seed commands for local bootstrap.
 
@@ -49,6 +54,10 @@ Monorepo for the Algorithm Puzzle Game platform.
   - graph level API + seeding
   - BFS/DFS traversal gameplay UI
   - queue/stack teaching panel + traversal scoring
+- Phase 4 auth/security hardening implemented:
+  - JWT refresh cookie hardening + logout blacklisting
+  - verification and OAuth endpoints
+  - auth/security regression tests
 
 ## Security Baseline
 
