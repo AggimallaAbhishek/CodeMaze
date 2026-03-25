@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import AuthInputField from "../components/auth/AuthInputField";
 import AuthSubmitButton from "../components/auth/AuthSubmitButton";
 import PageFeedback from "../components/PageFeedback";
+import { useElementWidth } from "../hooks/useElementWidth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 import { getCurrentUser, googleAuth, loginUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
@@ -54,22 +55,30 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleAuthLoading, setGoogleAuthLoading] = useState(false);
   const setAuthSession = useAuthStore((state) => state.setAuthSession);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
+  const [googleButtonRef, googleButtonWidth] = useElementWidth(360);
   const particles = useMemo(() => Array.from({ length: 28 }, (_, index) => buildParticleStyles(index)), []);
   const nextRoute = location.state?.from ?? "/levels";
 
   const onGoogleCredential = useCallback(
     async (credential) => {
-      console.debug("google_login_submit_started");
-      const auth = await googleAuth({ id_token: credential });
-      const user = auth.user ?? (await getCurrentUser(auth.access));
-      setAuthSession({
-        user,
-        access: auth.access
-      });
-      console.debug("google_login_submit_succeeded", { userId: user.id, redirect: nextRoute });
-      navigate(nextRoute, { replace: true });
+      setError("");
+      setGoogleAuthLoading(true);
+      try {
+        console.debug("google_login_submit_started");
+        const auth = await googleAuth({ id_token: credential });
+        const user = auth.user ?? (await getCurrentUser(auth.access));
+        setAuthSession({
+          user,
+          access: auth.access
+        });
+        console.debug("google_login_submit_succeeded", { userId: user.id, redirect: nextRoute });
+        navigate(nextRoute, { replace: true });
+      } finally {
+        setGoogleAuthLoading(false);
+      }
     },
     [navigate, nextRoute, setAuthSession]
   );
@@ -79,11 +88,18 @@ export default function LoginPage() {
     setError(message);
   }, []);
 
-  const { ready: googleReady, loading: googleLoading, start: startGoogleSignIn } = useGoogleSignIn({
+  const { ready: googleReady, renderButton: renderGoogleButton } = useGoogleSignIn({
     clientId: googleClientId,
     onCredential: onGoogleCredential,
     onError: onGoogleError
   });
+
+  useEffect(() => {
+    if (!googleReady || !googleButtonRef.current) {
+      return;
+    }
+    renderGoogleButton(googleButtonRef.current, { width: googleButtonWidth });
+  }, [googleButtonRef, googleButtonWidth, googleReady, renderGoogleButton]);
 
   function validateForm(nextEmail, nextPassword) {
     const nextErrors = { email: "", password: "" };
@@ -208,22 +224,16 @@ export default function LoginPage() {
           </header>
 
           <div className="login-template-social-row">
-            <button
-              type="button"
-              className="login-template-social-btn login-template-social-btn-google"
-              onClick={() => {
-                setError("");
-                startGoogleSignIn();
-              }}
-              disabled={loading || googleLoading}
-            >
-              {googleLoading ? "Connecting..." : "Continue with Google"}
-            </button>
+            <div
+              ref={googleButtonRef}
+              className={googleAuthLoading ? "login-template-social-embed is-loading" : "login-template-social-embed"}
+            />
           </div>
+          {googleAuthLoading ? <p className="login-template-google-hint">Signing in with Google...</p> : null}
           {!googleClientId ? (
             <p className="login-template-google-hint">Google sign-in requires `VITE_GOOGLE_CLIENT_ID` in your frontend env.</p>
           ) : null}
-          {googleClientId && !googleReady ? <p className="login-template-google-hint">Preparing Google sign-in...</p> : null}
+          {googleClientId && !googleReady ? <p className="login-template-google-hint">Loading Google sign-in...</p> : null}
 
           <div className="login-template-divider">
             <span />
@@ -247,7 +257,7 @@ export default function LoginPage() {
               placeholder="player@codemaze.gg"
               icon="◎"
               error={fieldErrors.email}
-              disabled={loading || googleLoading}
+              disabled={loading || googleAuthLoading}
             />
 
             <AuthInputField
@@ -265,14 +275,14 @@ export default function LoginPage() {
               placeholder="Enter your password"
               icon="L"
               error={fieldErrors.password}
-              disabled={loading || googleLoading}
+              disabled={loading || googleAuthLoading}
               rightAdornment={
                 <button
                   type="button"
                   className="auth-password-toggle"
                   onClick={() => setShowPassword((value) => !value)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  disabled={loading || googleLoading}
+                  disabled={loading || googleAuthLoading}
                 >
                   {showPassword ? "HIDE" : "SHOW"}
                 </button>
@@ -286,7 +296,7 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
-                  disabled={loading || googleLoading}
+                  disabled={loading || googleAuthLoading}
                 />
                 <span>Remember me</span>
               </label>
@@ -294,7 +304,7 @@ export default function LoginPage() {
                 type="button"
                 className="login-template-forgot"
                 onClick={() => setError("Forgot password flow is not configured yet.")}
-                disabled={loading || googleLoading}
+                disabled={loading || googleAuthLoading}
               >
                 Forgot password?
               </button>
@@ -302,7 +312,7 @@ export default function LoginPage() {
 
             {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
-            <AuthSubmitButton loading={loading} text="Enter Arena" loadingText="Signing In" disabled={googleLoading} />
+            <AuthSubmitButton loading={loading} text="Enter Arena" loadingText="Signing In" disabled={googleAuthLoading} />
           </form>
         </div>
       </div>

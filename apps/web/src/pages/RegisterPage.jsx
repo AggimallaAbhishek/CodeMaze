@@ -17,6 +17,22 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const setAuthSession = useAuthStore((state) => state.setAuthSession);
 
+  function applyServerError(message) {
+    const normalized = message.trim();
+    const fieldMatch = normalized.match(/^(Email|Username|Password):\s*(.+)$/i);
+    if (fieldMatch) {
+      const [, rawField, rawMessage] = fieldMatch;
+      const field = rawField.toLowerCase();
+      setFieldErrors((previous) => ({
+        ...previous,
+        [field]: rawMessage
+      }));
+      setError("");
+      return;
+    }
+    setError(normalized);
+  }
+
   function validateForm(nextEmail, nextUsername, nextPassword) {
     const nextErrors = { email: "", username: "", password: "" };
 
@@ -72,7 +88,7 @@ export default function RegisterPage() {
       navigate("/levels", { replace: true });
     } catch (err) {
       console.debug("register_submit_failed", { message: err.message });
-      setError(err.message);
+      applyServerError(err.message || "Request failed.");
     } finally {
       setLoading(false);
     }

@@ -51,7 +51,6 @@ function loadGoogleIdentityScript() {
 
 export function useGoogleSignIn({ clientId, onCredential, onError }) {
   const [ready, setReady] = useState(false);
-  const [loading, setLoading] = useState(false);
   const onCredentialRef = useRef(onCredential);
   const onErrorRef = useRef(onError);
 
@@ -79,7 +78,6 @@ export function useGoogleSignIn({ clientId, onCredential, onError }) {
           client_id: clientId,
           callback: async (response) => {
             if (!response?.credential) {
-              setLoading(false);
               onErrorRef.current?.("Google sign-in did not return a credential.");
               return;
             }
@@ -90,10 +88,6 @@ export function useGoogleSignIn({ clientId, onCredential, onError }) {
               const message = error instanceof Error ? error.message : "Google sign-in failed.";
               console.debug("google_signin_credential_failed", { message });
               onErrorRef.current?.(message);
-            } finally {
-              if (!cancelled) {
-                setLoading(false);
-              }
             }
           }
         });
@@ -114,35 +108,30 @@ export function useGoogleSignIn({ clientId, onCredential, onError }) {
     };
   }, [clientId]);
 
-  const start = useCallback(() => {
+  const renderButton = useCallback((container, options = {}) => {
     if (!clientId) {
       onErrorRef.current?.("Google sign-in is not configured. Add VITE_GOOGLE_CLIENT_ID.");
       return;
     }
+    if (!container) {
+      return;
+    }
     if (!window.google?.accounts?.id || !ready) {
-      onErrorRef.current?.("Google sign-in is still loading. Try again.");
       return;
     }
 
-    setLoading(true);
-    console.debug("google_signin_prompt_started");
-    window.google.accounts.id.prompt((notification) => {
-      const promptNotDisplayed = notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.();
-      if (promptNotDisplayed) {
-        const reason = notification?.getNotDisplayedReason?.() || notification?.getSkippedReason?.() || "unknown";
-        console.debug("google_signin_prompt_unavailable", { reason });
-        setLoading(false);
-        onErrorRef.current?.("Unable to open Google sign-in prompt. Check popup settings and try again.");
-        return;
-      }
-
-      if (notification?.isDismissedMoment?.()) {
-        const reason = notification.getDismissedReason?.() || "dismissed";
-        console.debug("google_signin_prompt_dismissed", { reason });
-        setLoading(false);
-      }
+    const width = Math.max(220, Math.min(460, Math.floor(options.width ?? container.getBoundingClientRect().width ?? 320)));
+    container.replaceChildren();
+    window.google.accounts.id.renderButton(container, {
+      theme: "filled_blue",
+      size: "large",
+      shape: "pill",
+      text: "continue_with",
+      logo_alignment: "left",
+      width
     });
+    console.debug("google_signin_button_rendered", { width });
   }, [clientId, ready]);
 
-  return { ready, loading, start };
+  return { ready, renderButton };
 }

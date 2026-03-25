@@ -8,7 +8,7 @@ const navigateMock = vi.fn();
 const setAuthSessionMock = vi.fn();
 const loginUserMock = vi.fn();
 const getCurrentUserMock = vi.fn();
-const startGoogleSignInMock = vi.fn();
+const renderGoogleButtonMock = vi.fn();
 const useGoogleSignInMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -39,12 +39,11 @@ describe("LoginPage", () => {
     setAuthSessionMock.mockReset();
     loginUserMock.mockReset();
     getCurrentUserMock.mockReset();
-    startGoogleSignInMock.mockReset();
+    renderGoogleButtonMock.mockReset();
     useGoogleSignInMock.mockReset();
     useGoogleSignInMock.mockReturnValue({
       ready: true,
-      loading: false,
-      start: startGoogleSignInMock
+      renderButton: renderGoogleButtonMock
     });
   });
 
@@ -116,16 +115,15 @@ describe("LoginPage", () => {
     });
   });
 
-  it("starts google sign-in when the google button is clicked", async () => {
-    const user = userEvent.setup();
-
+  it("renders the google sign-in button container through the hook", async () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole("button", { name: /Continue with Google/i }));
-    expect(startGoogleSignInMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(renderGoogleButtonMock).toHaveBeenCalled();
+    });
   });
 });

@@ -797,6 +797,21 @@ select {
   gap: 0.65rem;
 }
 
+.login-template-social-embed {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.login-template-social-embed > div {
+  width: 100%;
+}
+
+.login-template-social-embed.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .login-template-social-btn {
   border-radius: 10px;
   border: 1px solid var(--border-subtle);

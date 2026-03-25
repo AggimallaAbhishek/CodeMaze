@@ -3,6 +3,79 @@ import { useAuthStore } from "../store/useAuthStore";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 let refreshPromise = null;
 
+function firstMessage(value) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = firstMessage(item);
+      if (message) {
+        return message;
+      }
+    }
+    return "";
+  }
+
+  if (value && typeof value === "object") {
+    for (const nested of Object.values(value)) {
+      const message = firstMessage(nested);
+      if (message) {
+        return message;
+      }
+    }
+  }
+
+  return "";
+}
+
+function toFieldLabel(field) {
+  if (!field || field === "non_field_errors") {
+    return "";
+  }
+  const normalized = field.replaceAll("_", " ").trim();
+  return normalized ? `${normalized[0].toUpperCase()}${normalized.slice(1)}` : "";
+}
+
+function buildErrorMessage(data, fallbackMessage = "Request failed.") {
+  if (!data || typeof data !== "object") {
+    return fallbackMessage;
+  }
+
+  const detailMessage = firstMessage(data.detail);
+  if (detailMessage) {
+    return detailMessage;
+  }
+
+  const nonFieldMessage = firstMessage(data.non_field_errors);
+  if (nonFieldMessage) {
+    return nonFieldMessage;
+  }
+
+  const preferredFieldOrder = ["email", "username", "password"];
+  for (const field of preferredFieldOrder) {
+    const message = firstMessage(data[field]);
+    if (message) {
+      const label = toFieldLabel(field);
+      return label ? `${label}: ${message}` : message;
+    }
+  }
+
+  for (const [field, value] of Object.entries(data)) {
+    if (field === "detail" || field === "non_field_errors") {
+      continue;
+    }
+    const message = firstMessage(value);
+    if (message) {
+      const label = toFieldLabel(field);
+      return label ? `${label}: ${message}` : message;
+    }
+  }
+
+  return fallbackMessage;
+}
+
 function getCsrfToken() {
   if (typeof document === "undefined") {
     return "";
@@ -48,10 +121,10 @@ async function parseResponse(response) {
     return null;
   }
 
-  const data = await response.json().catch(() => ({}));
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data.detail ?? "Request failed.");
+    throw new Error(buildErrorMessage(data, `Request failed (${response.status}).`));
   }
 
   return data;
