@@ -34,3 +34,7 @@ media/
 
 # Misc
 *.log
+
+# Playwright artifacts
+apps/web/test-results/
+apps/web/playwright-report/

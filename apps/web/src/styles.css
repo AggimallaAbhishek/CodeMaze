@@ -24,7 +24,9 @@
   --radius-sm: 10px;
   --radius: 18px;
   --radius-lg: 28px;
-  --page-width: min(1240px, 94vw);
+  --page-gutter: clamp(14px, 2.2vw, 34px);
+  --page-max-width: 1720px;
+  --page-width: min(var(--page-max-width), calc(100vw - (var(--page-gutter) * 2)));
   --font-display: "Orbitron", monospace;
   --font-body: "Syne", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -1799,12 +1801,12 @@ tr:nth-child(even) td {
 .dashboard-page-shell,
 .leaderboard-page-shell {
   display: grid;
-  gap: 28px;
+  gap: clamp(28px, 3.4vw, 46px);
 }
 
 .home-section {
   display: grid;
-  gap: 20px;
+  gap: clamp(20px, 2.5vw, 32px);
 }
 
 .hero-shell {
@@ -1816,7 +1818,7 @@ tr:nth-child(even) td {
     linear-gradient(140deg, rgba(8, 13, 26, 0.96), rgba(10, 18, 33, 0.88)),
     radial-gradient(circle at top right, rgba(155, 0, 255, 0.16), transparent 35%);
   box-shadow: var(--shadow-card);
-  padding: clamp(28px, 4vw, 48px);
+  padding: clamp(30px, 3.8vw, 58px);
 }
 
 .hero-shell::before {
@@ -1832,14 +1834,14 @@ tr:nth-child(even) td {
 
 .hero-grid {
   display: grid;
-  gap: 28px;
+  gap: clamp(24px, 3.1vw, 44px);
   align-items: center;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.95fr);
 }
 
 .hero-copy {
   display: grid;
-  gap: 18px;
+  gap: clamp(16px, 2vw, 24px);
 }
 
 .hero-eyebrow {
@@ -1880,8 +1882,8 @@ tr:nth-child(even) td {
 .hero-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2.8rem, 7vw, 5.6rem);
-  line-height: 0.92;
+  font-size: clamp(2.6rem, 5.4vw, 5.1rem);
+  line-height: 0.94;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -1900,9 +1902,9 @@ tr:nth-child(even) td {
 
 .hero-subtitle {
   margin: 0;
-  max-width: 58ch;
+  max-width: 64ch;
   color: var(--muted);
-  font-size: 1.02rem;
+  font-size: 1.04rem;
 }
 
 .hero-action-row {
@@ -1914,7 +1916,7 @@ tr:nth-child(even) td {
 .hero-stat-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
 .hero-stat-grid.compact {
@@ -1923,7 +1925,7 @@ tr:nth-child(even) td {
 
 .hero-visual {
   position: relative;
-  min-height: 360px;
+  min-height: 390px;
 }
 
 .hero-preview-card {
@@ -2061,8 +2063,8 @@ tr:nth-child(even) td {
 
 .modes-grid {
   display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(18px, 2.2vw, 28px);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .mode-card {
@@ -2234,8 +2236,8 @@ tr:nth-child(even) td {
 .leaderboard-layout-modern,
 .dashboard-grid-modern {
   display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: clamp(18px, 2vw, 28px);
+  grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.9fr);
 }
 
 .arena-main-card,
@@ -2745,7 +2747,7 @@ tr:nth-child(even) td {
   }
 
   .page-container {
-    width: min(100vw - 24px, 1240px);
+    width: min(var(--page-max-width), calc(100vw - 24px));
     margin: 102px auto 32px;
   }
 
