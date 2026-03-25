@@ -124,6 +124,100 @@ def test_sorting_submission_flow(auth_client, user):
 
 
 @pytest.mark.django_db
+def test_pathfinding_submission_flow(auth_client):
+    level = Level.objects.create(
+        title="Pathfinding Test",
+        game_type=Level.GameType.PATHFINDING,
+        difficulty=2,
+        config={
+            "grid": [
+                [0, 0, 0],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
+            "start": [0, 0],
+            "end": [2, 2],
+            "weighted": False,
+            "mode": "bfs",
+        },
+        optimal_steps=5,
+        is_active=True,
+        order_index=1,
+    )
+
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    submission_response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [
+                {"type": "path_cell", "cell": [0, 0]},
+                {"type": "path_cell", "cell": [0, 1]},
+                {"type": "path_cell", "cell": [0, 2]},
+                {"type": "path_cell", "cell": [1, 2]},
+                {"type": "path_cell", "cell": [2, 2]},
+            ],
+            "hints_used": 0,
+            "time_elapsed": 20,
+        },
+        format="json",
+    )
+
+    assert submission_response.status_code == 201
+    assert submission_response.data["optimal_steps"] == 5
+    assert submission_response.data["user_steps"] == 5
+    assert submission_response.data["score"] > 0
+    assert "score_breakdown" in submission_response.data
+
+
+@pytest.mark.django_db
+def test_pathfinding_submission_revalidates_illegal_jumps(auth_client):
+    level = Level.objects.create(
+        title="Pathfinding Invalid Path Test",
+        game_type=Level.GameType.PATHFINDING,
+        difficulty=2,
+        config={
+            "grid": [
+                [0, 0, 0],
+                [0, 1, 0],
+                [0, 0, 0],
+            ],
+            "start": [0, 0],
+            "end": [0, 2],
+            "weighted": False,
+            "mode": "bfs",
+        },
+        optimal_steps=3,
+        is_active=True,
+        order_index=2,
+    )
+
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    submission_response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [
+                {"type": "path_cell", "cell": [0, 0]},
+                {"type": "path_cell", "cell": [0, 2]},
+            ],
+            "hints_used": 0,
+            "time_elapsed": 5,
+        },
+        format="json",
+    )
+
+    assert submission_response.status_code == 201
+    assert submission_response.data["score"] == 0
+
+
+@pytest.mark.django_db
 def test_start_level_requires_authentication(client):
     level = Level.objects.create(
         title="Sorting Test",

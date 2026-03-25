@@ -57,7 +57,7 @@ export function getCurrentUser(token) {
   return request("/users/me", { token });
 }
 
-export function getLevels({ gameType = "sorting", difficulty, token } = {}) {
+export function getLevels({ gameType, difficulty, token } = {}) {
   const params = new URLSearchParams();
   if (gameType) {
     params.set("game_type", gameType);

@@ -236,6 +236,58 @@ input {
   flex-wrap: wrap;
 }
 
+.maze-shell {
+  margin-top: 12px;
+  background: rgba(6, 16, 35, 0.75);
+  border: 1px solid rgba(129, 191, 227, 0.25);
+  border-radius: 12px;
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.maze-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.maze-cell {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(120, 194, 226, 0.35);
+  background: rgba(21, 38, 67, 0.9);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.maze-cell.blocked {
+  cursor: not-allowed;
+  background: rgba(8, 12, 20, 0.98);
+  border-color: rgba(36, 55, 80, 0.6);
+  color: rgba(108, 125, 145, 0.7);
+}
+
+.maze-cell.path {
+  background: rgba(67, 182, 167, 0.3);
+}
+
+.maze-cell.current {
+  border-color: #fbd084;
+  box-shadow: 0 0 0 1px rgba(248, 192, 103, 0.55) inset;
+}
+
+.maze-cell.start {
+  border-color: rgba(113, 222, 191, 0.82);
+}
+
+.maze-cell.end {
+  border-color: rgba(241, 138, 138, 0.82);
+}
+
+.maze-cell.optimal:not(.path) {
+  background: rgba(239, 155, 49, 0.28);
+}
+
 .result-panel {
   margin-top: 20px;
   background: rgba(6, 20, 40, 0.9);

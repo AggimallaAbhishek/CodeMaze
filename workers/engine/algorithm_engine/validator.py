@@ -99,6 +99,38 @@ def _validate_sorting(user_moves: list[dict], level_config: dict, hints_used: in
     }
 
 
+def _normalize_cell(cell: list[int] | tuple[int, int] | None) -> tuple[int, int] | None:
+    if not isinstance(cell, (list, tuple)) or len(cell) != 2:
+        return None
+    row, col = cell
+    if not isinstance(row, int) or not isinstance(col, int):
+        return None
+    return (row, col)
+
+
+def _is_walkable(grid: list[list[int]], cell: tuple[int, int]) -> bool:
+    if not grid or not grid[0]:
+        return False
+    row, col = cell
+    return 0 <= row < len(grid) and 0 <= col < len(grid[0]) and grid[row][col] != 1
+
+
+def _are_adjacent(source: tuple[int, int], target: tuple[int, int]) -> bool:
+    return abs(source[0] - target[0]) + abs(source[1] - target[1]) == 1
+
+
+def _extract_user_path(user_moves: list[dict]) -> tuple[list[tuple[int, int]], bool]:
+    path: list[tuple[int, int]] = []
+    for move in user_moves:
+        if move.get("type") != "path_cell":
+            continue
+        cell = _normalize_cell(move.get("cell"))
+        if cell is None:
+            return [], False
+        path.append(cell)
+    return path, True
+
+
 def _validate_pathfinding(user_moves: list[dict], level_config: dict, hints_used: int, time_elapsed: int) -> dict:
     grid = level_config.get("grid", [])
     start = tuple(level_config.get("start", [0, 0]))
@@ -111,8 +143,20 @@ def _validate_pathfinding(user_moves: list[dict], level_config: dict, hints_used
     else:
         optimal_path = bfs_shortest_path(grid, start, end)
 
-    user_path = [tuple(move.get("cell", [])) for move in user_moves if move.get("type") == "path_cell"]
-    solved = bool(user_path) and user_path[-1] == end and len(user_path) >= len(optimal_path)
+    user_path, path_payload_valid = _extract_user_path(user_moves)
+    path_starts_correctly = bool(user_path) and user_path[0] == start
+    path_ends_correctly = bool(user_path) and user_path[-1] == end
+    path_cells_valid = bool(user_path) and all(_is_walkable(grid, cell) for cell in user_path)
+    path_steps_adjacent = all(_are_adjacent(user_path[index], user_path[index + 1]) for index in range(len(user_path) - 1))
+
+    solved = (
+        bool(optimal_path)
+        and path_payload_valid
+        and path_starts_correctly
+        and path_ends_correctly
+        and path_cells_valid
+        and path_steps_adjacent
+    )
 
     breakdown = _score(
         optimal_steps=len(optimal_path),

@@ -5,7 +5,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 ## Layout
 
 - `apps/api`: Django + DRF API, auth, levels, submissions, leaderboard.
-- `apps/web`: React + Vite frontend, sorting vertical slice UI.
+- `apps/web`: React + Vite frontend, sorting + pathfinding gameplay UI.
 - `workers/engine`: Pure Python algorithm engine modules + tests.
 - `infra`: Infra-related configs (expand for production stages).
 
@@ -16,24 +16,30 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
-## MVP Features (Phase 0 + 1)
+## MVP Features (Phase 0 + 2)
 
 - Auth-required sorting gameplay:
   - register/login/logout with JWT and refresh token cookie
   - level start with Redis-backed session token
   - sorting move submission + server-side validation
   - result overlay with score/stars/optimal-step diff
+- Auth-required pathfinding gameplay:
+  - BFS/Dijkstra-backed maze level configs
+  - click-to-draw path with undo/redo/reset
+  - path submission with server-side legal-path validation
+  - optional optimal-path overlay after submission
 - Global and per-level leaderboard endpoints.
-- Idempotent sorting level seed command for local bootstrap.
+- Idempotent sorting + pathfinding level seed commands for local bootstrap.
 
 ## Current Implementation Scope
 
 - Phase 0 foundation complete in repo structure and CI baseline.
-- Phase 1 sorting vertical slice implemented end-to-end:
-  - sorting levels API
+- Phase 1 sorting vertical slice implemented end-to-end.
+- Phase 2 pathfinding vertical slice implemented end-to-end:
+  - multi-mode levels API (sorting + pathfinding)
   - session start
   - submission validation/scoring
-  - sorting gameplay UI
+  - sorting + pathfinding gameplay UIs
 
 ## Security Baseline
 

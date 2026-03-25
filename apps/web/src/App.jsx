@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import LevelsPage from "./pages/LevelsPage";
 import LoginPage from "./pages/LoginPage";
+import PathfindingPage from "./pages/PathfindingPage";
 import RegisterPage from "./pages/RegisterPage";
 import SortingPage from "./pages/SortingPage";
 import { useAuthStore } from "./store/useAuthStore";
@@ -34,6 +35,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <SortingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/levels/:levelId/pathfinding"
+          element={
+            <ProtectedRoute>
+              <PathfindingPage />
             </ProtectedRoute>
           }
         />
