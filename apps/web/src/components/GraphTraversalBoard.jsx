@@ -8,6 +8,7 @@ export default function GraphTraversalBoard({
   visitedNodes,
   startNode,
   nextExpected,
+  hintNode,
   onVisitNode,
   disabled
 }) {
@@ -78,13 +79,15 @@ export default function GraphTraversalBoard({
           const isCurrent = currentNode === node;
           const isStart = startNode === node;
           const isExpected = nextExpected === node;
+          const isHint = hintNode === node;
 
           const className = [
             "graph-node",
             isVisited ? "visited" : "",
             isCurrent ? "current" : "",
             isStart ? "start" : "",
-            isExpected ? "expected" : ""
+            isExpected ? "expected" : "",
+            isHint ? "hint" : ""
           ]
             .filter(Boolean)
             .join(" ");

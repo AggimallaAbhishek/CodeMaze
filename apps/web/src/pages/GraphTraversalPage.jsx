@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import GraphTraversalBoard from "../components/GraphTraversalBoard";
 import ResultOverlay from "../components/ResultOverlay";
-import { getLevelById, startLevelSession, submitMoves } from "../lib/apiClient";
+import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { useGraphTraversalGameStore } from "../store/useGraphTraversalGameStore";
 import { buildGraphMoves, canonicalTraversal, traversalTeachingState } from "../utils/graph";
@@ -12,6 +12,7 @@ export default function GraphTraversalPage() {
   const { levelId } = useParams();
   const navigate = useNavigate();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const mergeProgressionSnapshot = useAuthStore((state) => state.mergeProgressionSnapshot);
 
   const {
     level,
@@ -36,6 +37,10 @@ export default function GraphTraversalPage() {
 
   const [loadingLevel, setLoadingLevel] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingHint, setLoadingHint] = useState(false);
+  const [hintMessage, setHintMessage] = useState("");
+  const [hintPreview, setHintPreview] = useState(null);
+  const [hintsUsed, setHintsUsed] = useState(0);
 
   useEffect(() => {
     if (!accessToken) {
@@ -119,17 +124,56 @@ export default function GraphTraversalPage() {
           session_id: sessionId,
           level_id: level.id,
           moves: buildGraphMoves(visitedNodes),
-          hints_used: 0,
+          hints_used: hintsUsed,
           time_elapsed: elapsedSeconds
         },
         accessToken
       );
       applyResult(submission);
+      mergeProgressionSnapshot({
+        totalXp: submission.total_xp,
+        progression: submission.progression,
+        awardedBadges: submission.awarded_badges
+      });
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleHint() {
+    if (!sessionId || !level) {
+      return;
+    }
+
+    setLoadingHint(true);
+    setError("");
+
+    try {
+      const hint = await requestLevelHint(
+        level.id,
+        {
+          session_id: sessionId,
+          moves: buildGraphMoves(visitedNodes)
+        },
+        accessToken
+      );
+      setHintMessage(hint.message);
+      setHintPreview(hint.preview_move);
+      setHintsUsed(hint.hints_used_total ?? 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingHint(false);
+    }
+  }
+
+  function handleResetTraversal() {
+    resetTraversal();
+    setHintMessage("");
+    setHintPreview(null);
+    setHintsUsed(0);
   }
 
   if (loadingLevel) {
@@ -164,6 +208,10 @@ export default function GraphTraversalPage() {
           <strong>{expiresIn}s</strong>
         </div>
         <div>
+          <span className="label">Hints Used</span>
+          <strong>{hintsUsed}</strong>
+        </div>
+        <div>
           <span className="label">Target Steps</span>
           <strong>{canonicalOrder.length}</strong>
         </div>
@@ -190,10 +238,12 @@ export default function GraphTraversalPage() {
         visitedNodes={visitedNodes}
         startNode={startNode}
         nextExpected={teaching.nextExpected}
+        hintNode={hintPreview?.node ?? null}
         onVisitNode={visitNode}
         disabled={status !== "playing"}
       />
 
+      {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
       <div className="action-row">
@@ -203,15 +253,18 @@ export default function GraphTraversalPage() {
         <button type="button" className="ghost-btn" onClick={redoStep} disabled={status !== "playing" || !redoNodes.length}>
           Redo
         </button>
-        <button type="button" className="ghost-btn" onClick={resetTraversal} disabled={status !== "playing"}>
+        <button type="button" className="ghost-btn" onClick={handleResetTraversal} disabled={status !== "playing"}>
           Reset Traversal
+        </button>
+        <button type="button" className="ghost-btn" onClick={handleHint} disabled={loadingHint || status !== "playing"}>
+          {loadingHint ? "Loading Hint..." : "Use Hint (-10)"}
         </button>
         <button type="button" className="primary-btn" disabled={submitting || status !== "playing" || visitedNodes.length <= 1} onClick={handleSubmit}>
           {submitting ? "Submitting..." : "Submit Traversal"}
         </button>
       </div>
 
-      <ResultOverlay result={result} />
+      <ResultOverlay result={result} replayHref={result?.submission_id ? `/replay/${result.submission_id}` : ""} />
     </section>
   );
 }

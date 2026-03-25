@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from leaderboard.progression import get_user_progress_overview, serialize_badges
 from users.models import User
 
 
@@ -26,6 +27,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserMeSerializer(serializers.ModelSerializer):
+    progression = serializers.SerializerMethodField()
+    badges = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -37,8 +42,30 @@ class UserMeSerializer(serializers.ModelSerializer):
             "is_verified",
             "preferred_algorithms",
             "join_date",
+            "progression",
+            "badges",
+            "stats",
         ]
         read_only_fields = ["id", "email", "total_xp", "is_verified", "join_date"]
+
+    def get_progression(self, obj):
+        overview = get_user_progress_overview(obj)
+        return {
+            "level": overview["level"],
+            "xp_total": overview["xp_total"],
+            "xp_into_level": overview["xp_into_level"],
+            "xp_for_next_level": overview["xp_for_next_level"],
+            "xp_to_next_level": overview["xp_to_next_level"],
+            "progress_ratio": overview["progress_ratio"],
+        }
+
+    def get_badges(self, obj):
+        badges = obj.badges.order_by("-earned_at")
+        return serialize_badges(badges)
+
+    def get_stats(self, obj):
+        overview = get_user_progress_overview(obj)
+        return overview["stats"]
 
 
 class PublicProfileSerializer(serializers.ModelSerializer):

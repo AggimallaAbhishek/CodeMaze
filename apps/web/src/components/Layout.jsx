@@ -30,11 +30,13 @@ export default function Layout({ children }) {
         <nav className="menu-links">
           <Link to="/levels">Levels</Link>
           <Link to="/leaderboard">Leaderboard</Link>
+          {user ? <Link to="/profile">Profile</Link> : null}
         </nav>
         <div className="account-cluster">
           {user ? (
             <>
               <span className="pill">{user.username}</span>
+              <span className="pill subtle">XP {user.total_xp ?? 0}</span>
               <button className="ghost-btn" onClick={handleLogout} type="button">
                 Logout
               </button>

@@ -82,6 +82,34 @@ export function submitMoves(payload, token) {
   return request("/submissions", { method: "POST", payload, token });
 }
 
-export function getGlobalLeaderboard(scope = "all_time") {
-  return request(`/leaderboard?scope=${scope}`);
+export function requestLevelHint(levelId, payload, token) {
+  return request(`/levels/${levelId}/hint`, { method: "POST", payload, token });
+}
+
+export function getMySubmissions(token, { levelId, best, limit } = {}) {
+  const params = new URLSearchParams();
+  if (levelId) {
+    params.set("level_id", String(levelId));
+  }
+  if (best) {
+    params.set("best", "true");
+  }
+  if (limit) {
+    params.set("limit", String(limit));
+  }
+
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return request(`/submissions/me${query}`, { token });
+}
+
+export function getSubmissionReplay(submissionId, token) {
+  return request(`/submissions/${submissionId}/replay`, { token });
+}
+
+export function getGlobalLeaderboard(scope = "all_time", token) {
+  return request(`/leaderboard?scope=${scope}`, { token });
+}
+
+export function getLevelLeaderboard(levelId, scope = "all_time", token) {
+  return request(`/leaderboard/levels/${levelId}?scope=${scope}`, { token });
 }

@@ -7,6 +7,8 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import LevelsPage from "./pages/LevelsPage";
 import LoginPage from "./pages/LoginPage";
 import PathfindingPage from "./pages/PathfindingPage";
+import ProfilePage from "./pages/ProfilePage";
+import ReplayPage from "./pages/ReplayPage";
 import RegisterPage from "./pages/RegisterPage";
 import SortingPage from "./pages/SortingPage";
 import { useAuthStore } from "./store/useAuthStore";
@@ -52,6 +54,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <GraphTraversalPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/replay/:submissionId"
+          element={
+            <ProtectedRoute>
+              <ReplayPage />
             </ProtectedRoute>
           }
         />

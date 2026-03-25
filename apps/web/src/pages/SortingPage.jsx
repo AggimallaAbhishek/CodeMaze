@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ResultOverlay from "../components/ResultOverlay";
 import SortingCanvas from "../components/SortingCanvas";
-import { getLevelById, startLevelSession, submitMoves } from "../lib/apiClient";
+import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSortingGameStore } from "../store/useSortingGameStore";
 import { isSorted } from "../utils/sorting";
@@ -12,6 +12,7 @@ export default function SortingPage() {
   const { levelId } = useParams();
   const navigate = useNavigate();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const mergeProgressionSnapshot = useAuthStore((state) => state.mergeProgressionSnapshot);
 
   const {
     level,
@@ -35,6 +36,10 @@ export default function SortingPage() {
 
   const [loadingLevel, setLoadingLevel] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingHint, setLoadingHint] = useState(false);
+  const [hintMessage, setHintMessage] = useState("");
+  const [hintPreview, setHintPreview] = useState(null);
+  const [hintsUsed, setHintsUsed] = useState(0);
 
   useEffect(() => {
     if (!accessToken) {
@@ -108,17 +113,56 @@ export default function SortingPage() {
           session_id: sessionId,
           level_id: level.id,
           moves,
-          hints_used: 0,
+          hints_used: hintsUsed,
           time_elapsed: elapsedSeconds
         },
         accessToken
       );
       applyResult(submission);
+      mergeProgressionSnapshot({
+        totalXp: submission.total_xp,
+        progression: submission.progression,
+        awardedBadges: submission.awarded_badges
+      });
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleHint() {
+    if (!sessionId || !level) {
+      return;
+    }
+
+    setLoadingHint(true);
+    setError("");
+
+    try {
+      const hint = await requestLevelHint(
+        level.id,
+        {
+          session_id: sessionId,
+          moves
+        },
+        accessToken
+      );
+      setHintMessage(hint.message);
+      setHintPreview(hint.preview_move);
+      setHintsUsed(hint.hints_used_total ?? 0);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingHint(false);
+    }
+  }
+
+  function handleResetRound() {
+    resetToInitialArray();
+    setHintMessage("");
+    setHintPreview(null);
+    setHintsUsed(0);
   }
 
   if (loadingLevel) {
@@ -153,6 +197,10 @@ export default function SortingPage() {
           <strong>{expiresIn}s</strong>
         </div>
         <div>
+          <span className="label">Hints Used</span>
+          <strong>{hintsUsed}</strong>
+        </div>
+        <div>
           <span className="label">Sorted?</span>
           <strong>{solvedLocally ? "Yes" : "No"}</strong>
         </div>
@@ -161,13 +209,18 @@ export default function SortingPage() {
       <SortingCanvas
         values={workingArray}
         selectedIndex={selectedIndex}
+        hintIndices={hintPreview?.indices ?? []}
         onSelectBar={selectBar}
         disabled={status !== "playing"}
       />
 
+      {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
       <div className="action-row">
+        <button type="button" className="ghost-btn" disabled={loadingHint || status !== "playing"} onClick={handleHint}>
+          {loadingHint ? "Loading Hint..." : "Use Hint (-10)"}
+        </button>
         <button
           type="button"
           className="primary-btn"
@@ -176,12 +229,12 @@ export default function SortingPage() {
         >
           {submitting ? "Submitting..." : "Submit Moves"}
         </button>
-        <button type="button" className="ghost-btn" onClick={resetToInitialArray} disabled={status !== "playing"}>
+        <button type="button" className="ghost-btn" onClick={handleResetRound} disabled={status !== "playing"}>
           Reset Round
         </button>
       </div>
 
-      <ResultOverlay result={result} />
+      <ResultOverlay result={result} replayHref={result?.submission_id ? `/replay/${result.submission_id}` : ""} />
     </section>
   );
 }

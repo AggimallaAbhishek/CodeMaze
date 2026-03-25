@@ -5,6 +5,7 @@ export default function PathfindingGrid({
   weights,
   pathCells,
   optimalPathCells,
+  hintCell,
   start,
   end,
   weighted,
@@ -28,6 +29,7 @@ export default function PathfindingGrid({
             const isPath = pathSet.has(key);
             const isOptimal = optimalSet.has(key);
             const isCurrent = currentCell?.[0] === rowIndex && currentCell?.[1] === colIndex;
+            const isHint = hintCell?.[0] === rowIndex && hintCell?.[1] === colIndex;
 
             const className = [
               "maze-cell",
@@ -36,7 +38,8 @@ export default function PathfindingGrid({
               isEnd ? "end" : "",
               isPath ? "path" : "",
               isOptimal ? "optimal" : "",
-              isCurrent ? "current" : ""
+              isCurrent ? "current" : "",
+              isHint ? "hint" : ""
             ]
               .filter(Boolean)
               .join(" ");

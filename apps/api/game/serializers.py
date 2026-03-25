@@ -29,6 +29,11 @@ class StartSessionSerializer(serializers.Serializer):
     level_id = serializers.UUIDField()
 
 
+class HintRequestSerializer(serializers.Serializer):
+    session_id = serializers.CharField(max_length=128)
+    moves = serializers.ListField(child=serializers.DictField(), allow_empty=True)
+
+
 class SubmissionCreateSerializer(serializers.Serializer):
     session_id = serializers.CharField(max_length=128)
     level_id = serializers.UUIDField()
@@ -53,10 +58,32 @@ class SubmissionSerializer(serializers.ModelSerializer):
             "optimal_steps",
             "user_steps",
             "created_at",
+            "diff",
         ]
 
 
+class ReplayLevelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Level
+        fields = ["id", "title", "game_type", "difficulty"]
+
+
 class ReplaySerializer(serializers.ModelSerializer):
+    level = ReplayLevelSerializer(read_only=True)
+
     class Meta:
         model = Submission
-        fields = ["id", "moves", "optimal_moves", "diff", "score", "stars", "created_at"]
+        fields = [
+            "id",
+            "level",
+            "moves",
+            "optimal_moves",
+            "diff",
+            "score",
+            "stars",
+            "time_elapsed",
+            "hints_used",
+            "optimal_steps",
+            "user_steps",
+            "created_at",
+        ]
