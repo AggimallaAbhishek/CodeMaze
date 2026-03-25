@@ -35,23 +35,31 @@ export default function GraphTraversalBoard({
   const visited = new Set(visitedNodes);
   const currentNode = visitedNodes[visitedNodes.length - 1];
 
-  function nodePoint(node, index) {
-    const explicit = positions?.[node];
-    if (Array.isArray(explicit) && explicit.length === 2) {
-      return {
-        x: Math.min(Math.max(explicit[0], 10), 90),
-        y: Math.min(Math.max(explicit[1], 10), 90)
-      };
-    }
-    const angle = (2 * Math.PI * index) / Math.max(nodes.length, 1);
-    return {
-      x: 50 + Math.cos(angle) * 32,
-      y: 50 + Math.sin(angle) * 28
-    };
-  }
-
   const coordinates = useMemo(
-    () => Object.fromEntries(nodes.map((node, index) => [node, nodePoint(node, index)])),
+    () =>
+      Object.fromEntries(
+        nodes.map((node, index) => {
+          const explicit = positions?.[node];
+          if (Array.isArray(explicit) && explicit.length === 2) {
+            return [
+              node,
+              {
+                x: Math.min(Math.max(explicit[0], 10), 90),
+                y: Math.min(Math.max(explicit[1], 10), 90)
+              }
+            ];
+          }
+
+          const angle = (2 * Math.PI * index) / Math.max(nodes.length, 1);
+          return [
+            node,
+            {
+              x: 50 + Math.cos(angle) * 32,
+              y: 50 + Math.sin(angle) * 28
+            }
+          ];
+        })
+      ),
     [nodes, positions]
   );
   const edges = useMemo(() => {
