@@ -76,3 +76,60 @@ def test_validate_pathfinding_submission_rejects_non_adjacent_jumps():
 
     assert result["solved"] is False
     assert result["score"] == 0
+
+
+def test_validate_graph_submission_accepts_correct_bfs_order():
+    level_config = {
+        "adjacency": {
+            "A": ["B", "C"],
+            "B": ["D"],
+            "C": [],
+            "D": [],
+        },
+        "start": "A",
+        "mode": "bfs",
+    }
+    result = validate_submission(
+        game_type="graph_traversal",
+        user_moves=[
+            {"type": "graph_visit", "node": "A"},
+            {"type": "graph_visit", "node": "B"},
+            {"type": "graph_visit", "node": "C"},
+            {"type": "graph_visit", "node": "D"},
+        ],
+        level_config=level_config,
+        hints_used=0,
+        time_elapsed=10,
+    )
+
+    assert result["solved"] is True
+    assert result["score"] > 0
+    assert result["optimal_steps"] == 4
+
+
+def test_validate_graph_submission_rejects_wrong_order():
+    level_config = {
+        "adjacency": {
+            "A": ["B", "C"],
+            "B": ["D"],
+            "C": [],
+            "D": [],
+        },
+        "start": "A",
+        "mode": "dfs",
+    }
+    result = validate_submission(
+        game_type="graph_traversal",
+        user_moves=[
+            {"type": "graph_visit", "node": "A"},
+            {"type": "graph_visit", "node": "C"},
+            {"type": "graph_visit", "node": "B"},
+            {"type": "graph_visit", "node": "D"},
+        ],
+        level_config=level_config,
+        hints_used=0,
+        time_elapsed=10,
+    )
+
+    assert result["solved"] is False
+    assert result["score"] == 0

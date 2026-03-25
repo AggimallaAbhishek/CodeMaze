@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import GraphTraversalPage from "./pages/GraphTraversalPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import LevelsPage from "./pages/LevelsPage";
 import LoginPage from "./pages/LoginPage";
@@ -43,6 +44,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PathfindingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/levels/:levelId/graph-traversal"
+          element={
+            <ProtectedRoute>
+              <GraphTraversalPage />
             </ProtectedRoute>
           }
         />

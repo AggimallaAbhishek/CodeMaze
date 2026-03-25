@@ -5,7 +5,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 ## Layout
 
 - `apps/api`: Django + DRF API, auth, levels, submissions, leaderboard.
-- `apps/web`: React + Vite frontend, sorting + pathfinding gameplay UI.
+- `apps/web`: React + Vite frontend, sorting + pathfinding + graph traversal gameplay UI.
 - `workers/engine`: Pure Python algorithm engine modules + tests.
 - `infra`: Infra-related configs (expand for production stages).
 
@@ -16,7 +16,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
-## MVP Features (Phase 0 + 2)
+## MVP Features (Phase 0 + 3)
 
 - Auth-required sorting gameplay:
   - register/login/logout with JWT and refresh token cookie
@@ -28,8 +28,13 @@ Monorepo for the Algorithm Puzzle Game platform.
   - click-to-draw path with undo/redo/reset
   - path submission with server-side legal-path validation
   - optional optimal-path overlay after submission
+- Auth-required graph traversal gameplay:
+  - BFS/DFS-backed graph level configs
+  - click-to-visit node order with undo/redo/reset
+  - queue/stack teaching panel for traversal guidance
+  - traversal submission with server-side canonical-order validation
 - Global and per-level leaderboard endpoints.
-- Idempotent sorting + pathfinding level seed commands for local bootstrap.
+- Idempotent sorting + pathfinding + graph seed commands for local bootstrap.
 
 ## Current Implementation Scope
 
@@ -40,6 +45,10 @@ Monorepo for the Algorithm Puzzle Game platform.
   - session start
   - submission validation/scoring
   - sorting + pathfinding gameplay UIs
+- Phase 3 graph traversal vertical slice implemented end-to-end:
+  - graph level API + seeding
+  - BFS/DFS traversal gameplay UI
+  - queue/stack teaching panel + traversal scoring
 
 ## Security Baseline
 

@@ -38,7 +38,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0
-    command: sh -c "python manage.py migrate && python manage.py seed_sorting_levels && python manage.py seed_pathfinding_levels && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py seed_sorting_levels && python manage.py seed_pathfinding_levels && python manage.py seed_graph_levels && python manage.py runserver 0.0.0.0:8000"
     working_dir: /app/apps/api
     volumes:
       - .:/app

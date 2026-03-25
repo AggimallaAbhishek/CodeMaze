@@ -24,7 +24,23 @@ function levelRoute(level) {
   if (level.game_type === "pathfinding") {
     return `/levels/${level.id}/pathfinding`;
   }
-  return null;
+  if (level.game_type === "graph_traversal") {
+    return `/levels/${level.id}/graph-traversal`;
+  }
+  return `/levels/${level.id}/sorting`;
+}
+
+function levelActionLabel(gameType) {
+  if (gameType === "sorting") {
+    return "Play Sorting";
+  }
+  if (gameType === "pathfinding") {
+    return "Play Maze";
+  }
+  if (gameType === "graph_traversal") {
+    return "Play Graph";
+  }
+  return "Play";
 }
 
 export default function LevelsPage() {
@@ -66,7 +82,7 @@ export default function LevelsPage() {
       <div className="section-head">
         <div>
           <h1>Puzzle Levels</h1>
-          <p className="muted-text">Pick a sorting or pathfinding challenge and optimize your strategy.</p>
+          <p className="muted-text">Pick a sorting, pathfinding, or graph traversal challenge and optimize your strategy.</p>
         </div>
         <Link className="ghost-btn" to="/leaderboard">
           View Leaderboard
@@ -82,15 +98,9 @@ export default function LevelsPage() {
             <h2>{level.title}</h2>
             <p>Mode: {gameTypeLabel(level.game_type)}</p>
             <p>Difficulty: {level.difficulty}</p>
-            {levelRoute(level) ? (
-              <Link className="primary-btn" to={levelRoute(level)}>
-                {level.game_type === "sorting" ? "Play Sorting" : "Play Maze"}
-              </Link>
-            ) : (
-              <button type="button" className="ghost-btn" disabled>
-                Coming Soon
-              </button>
-            )}
+            <Link className="primary-btn" to={levelRoute(level)}>
+              {levelActionLabel(level.game_type)}
+            </Link>
           </article>
         ))}
       </div>

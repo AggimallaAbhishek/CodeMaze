@@ -288,6 +288,78 @@ input {
   background: rgba(239, 155, 49, 0.28);
 }
 
+.teaching-panel {
+  margin-top: 14px;
+  margin-bottom: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.teaching-panel div {
+  background: rgba(10, 26, 51, 0.9);
+  border: 1px solid rgba(133, 205, 231, 0.26);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.teaching-panel p {
+  margin: 8px 0 0;
+  word-break: break-word;
+}
+
+.graph-shell {
+  margin-top: 12px;
+  background: rgba(6, 16, 35, 0.75);
+  border: 1px solid rgba(129, 191, 227, 0.25);
+  border-radius: 12px;
+  padding: 8px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.graph-canvas {
+  display: block;
+}
+
+.graph-node-layer {
+  position: absolute;
+  inset: 8px auto auto 8px;
+  width: 600px;
+  height: 360px;
+}
+
+.graph-node {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  border-radius: 50%;
+  border: 1px solid rgba(120, 194, 226, 0.35);
+  background: rgba(21, 38, 67, 0.95);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.graph-node.visited {
+  background: rgba(67, 182, 167, 0.34);
+}
+
+.graph-node.current {
+  border-color: #fbd084;
+  box-shadow: 0 0 0 1px rgba(248, 192, 103, 0.55) inset;
+}
+
+.graph-node.start {
+  border-color: rgba(113, 222, 191, 0.82);
+}
+
+.graph-node.expected:not(.visited) {
+  background: rgba(239, 155, 49, 0.28);
+}
+
 .result-panel {
   margin-top: 20px;
   background: rgba(6, 20, 40, 0.9);
