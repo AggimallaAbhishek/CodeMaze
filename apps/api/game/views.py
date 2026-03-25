@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -221,9 +221,10 @@ class SubmissionCreateView(APIView):
         xp_earned = max(0, score * 2)
 
         with transaction.atomic():
+            locked_user = request.user.__class__.objects.select_for_update().get(pk=request.user.pk)
             current_best = (
                 Submission.objects.select_for_update()
-                .filter(user=request.user, level=level, is_best=True)
+                .filter(user=locked_user, level=level, is_best=True)
                 .order_by("-score")
                 .first()
             )
@@ -234,7 +235,7 @@ class SubmissionCreateView(APIView):
                 current_best.save(update_fields=["is_best", "updated_at"])
 
             submission = Submission.objects.create(
-                user=request.user,
+                user=locked_user,
                 level=level,
                 moves=user_moves,
                 score=score,
@@ -248,12 +249,12 @@ class SubmissionCreateView(APIView):
                 is_best=is_personal_best,
             )
 
-            request.user.total_xp += xp_earned
-            request.user.save(update_fields=["total_xp"])
-            update_leaderboards(user_id=str(request.user.id), level_id=str(level.id), score=score)
-            awarded_badges = award_badges_for_submission(user=request.user, level=level, submission=submission)
+            locked_user.__class__.objects.filter(pk=locked_user.pk).update(total_xp=F("total_xp") + xp_earned)
+            locked_user.refresh_from_db(fields=["total_xp"])
+            awarded_badges = award_badges_for_submission(user=locked_user, level=level, submission=submission)
+            transaction.on_commit(lambda: update_leaderboards(user_id=str(locked_user.id), level_id=str(level.id), score=score))
 
-        progression = build_progression_snapshot(request.user.total_xp)
+        progression = build_progression_snapshot(locked_user.total_xp)
 
         logger.info(
             "submission_processed",
@@ -276,7 +277,7 @@ class SubmissionCreateView(APIView):
                 "optimal_steps": result["optimal_steps"],
                 "user_steps": result["user_steps"],
                 "xp_earned": xp_earned,
-                "total_xp": request.user.total_xp,
+                "total_xp": locked_user.total_xp,
                 "progression": progression,
                 "hints_used": effective_hints_used,
                 "awarded_badges": awarded_badges,

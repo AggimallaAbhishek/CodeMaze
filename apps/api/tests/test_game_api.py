@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-import pytest
+from datetime import timedelta
 
-from game.models import Level
+import pytest
+from django.db import IntegrityError
+from django.utils import timezone
+from redis.exceptions import RedisError
+
+from game.models import GameSession, Level, Submission
 
 
 @pytest.mark.django_db
@@ -121,6 +126,149 @@ def test_sorting_submission_flow(auth_client, user):
     me_response = auth_client.get("/api/v1/submissions/me")
     assert me_response.status_code == 200
     assert len(me_response.data) == 1
+
+
+@pytest.mark.django_db
+def test_sorting_submission_updates_total_xp_and_single_personal_best(auth_client, user):
+    level = Level.objects.create(
+        title="Sorting XP Test",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=2,
+    )
+
+    first_start = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert first_start.status_code == 201
+    first_submission = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": first_start.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [{"type": "swap", "indices": [0, 2]}],
+            "hints_used": 0,
+            "time_elapsed": 3,
+        },
+        format="json",
+    )
+    assert first_submission.status_code == 201
+    assert first_submission.data["total_xp"] == 0
+
+    second_start = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert second_start.status_code == 201
+    second_submission = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": second_start.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [
+                {"type": "swap", "indices": [0, 1]},
+                {"type": "swap", "indices": [1, 2]},
+            ],
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
+    assert second_submission.status_code == 201
+    assert second_submission.data["total_xp"] == 200
+
+    user.refresh_from_db()
+    assert user.total_xp == 200
+    assert Submission.objects.filter(user=user, level=level, is_best=True).count() == 1
+    assert Submission.objects.get(user=user, level=level, is_best=True).score == 100
+
+
+@pytest.mark.django_db
+def test_submission_schedules_leaderboard_update_after_commit(auth_client, user, monkeypatch, django_capture_on_commit_callbacks):
+    level = Level.objects.create(
+        title="Sorting Leaderboard Commit Test",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=3,
+    )
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    leaderboard_calls = []
+
+    def record_leaderboard_update(*, user_id, level_id, score):
+        leaderboard_calls.append({"user_id": user_id, "level_id": level_id, "score": score})
+
+    monkeypatch.setattr("game.views.update_leaderboards", record_leaderboard_update)
+
+    with django_capture_on_commit_callbacks(execute=False) as callbacks:
+        submission_response = auth_client.post(
+            "/api/v1/submissions",
+            {
+                "session_id": start_response.data["session_id"],
+                "level_id": str(level.id),
+                "moves": [
+                    {"type": "swap", "indices": [0, 1]},
+                    {"type": "swap", "indices": [1, 2]},
+                ],
+                "hints_used": 0,
+                "time_elapsed": 0,
+            },
+            format="json",
+        )
+
+    assert submission_response.status_code == 201
+    assert len(callbacks) == 1
+    assert leaderboard_calls == []
+
+    callbacks[0]()
+    assert leaderboard_calls == [{"user_id": str(user.id), "level_id": str(level.id), "score": 100}]
+
+
+@pytest.mark.django_db
+def test_submission_model_enforces_single_best_submission_per_level(user):
+    level = Level.objects.create(
+        title="Sorting Best Constraint Test",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=4,
+    )
+
+    Submission.objects.create(
+        user=user,
+        level=level,
+        moves=[{"type": "swap", "indices": [0, 1]}],
+        score=60,
+        stars=2,
+        time_elapsed=10,
+        hints_used=0,
+        optimal_steps=2,
+        user_steps=1,
+        diff=[],
+        optimal_moves=[],
+        is_best=True,
+    )
+
+    with pytest.raises(IntegrityError):
+        Submission.objects.create(
+            user=user,
+            level=level,
+            moves=[{"type": "swap", "indices": [1, 2]}],
+            score=70,
+            stars=2,
+            time_elapsed=8,
+            hints_used=0,
+            optimal_steps=2,
+            user_steps=1,
+            diff=[],
+            optimal_moves=[],
+            is_best=True,
+        )
 
 
 @pytest.mark.django_db
@@ -347,6 +495,81 @@ def test_submission_rejects_invalid_session(auth_client):
         },
         format="json",
     )
+    assert response.status_code == 400
+    assert response.data["detail"] == "Invalid or expired session."
+
+
+@pytest.mark.django_db
+def test_db_backed_game_session_allows_submission_when_redis_is_unavailable(auth_client, monkeypatch):
+    level = Level.objects.create(
+        title="Session Fallback Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=5,
+    )
+
+    def raise_redis_error():
+        raise RedisError("redis offline")
+
+    monkeypatch.setattr("game.services.get_redis_client", raise_redis_error)
+
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+    assert GameSession.objects.filter(session_id=start_response.data["session_id"]).exists()
+
+    submission_response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [
+                {"type": "swap", "indices": [0, 1]},
+                {"type": "swap", "indices": [1, 2]},
+            ],
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
+    assert submission_response.status_code == 201
+    assert submission_response.data["score"] == 100
+
+
+@pytest.mark.django_db
+def test_submission_rejects_expired_database_backed_session(auth_client, user):
+    level = Level.objects.create(
+        title="Expired Session Sorting",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=6,
+    )
+    session = GameSession.objects.create(
+        session_id="sess_expired_case",
+        user=user,
+        level=level,
+        hints_used=0,
+        expires_at=timezone.now() - timedelta(seconds=1),
+    )
+
+    response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": session.session_id,
+            "level_id": str(level.id),
+            "moves": [],
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
     assert response.status_code == 400
     assert response.data["detail"] == "Invalid or expired session."
 

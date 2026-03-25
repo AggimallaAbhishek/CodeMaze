@@ -5,6 +5,7 @@ import uuid
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 
 class TimeStampedModel(models.Model):
@@ -54,6 +55,31 @@ class Submission(TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "level"],
+                condition=Q(is_best=True),
+                name="uniq_best_submission_per_user_level",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "level", "is_best"], name="submission_user_level_best_idx"),
+            models.Index(fields=["user", "created_at"], name="submission_user_created_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"Submission<{self.id}>"
+
+
+class GameSession(models.Model):
+    session_id = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="game_sessions")
+    level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name="game_sessions")
+    hints_used = models.PositiveSmallIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["-expires_at"]
+
+    def __str__(self) -> str:
+        return f"GameSession<{self.session_id}>"
