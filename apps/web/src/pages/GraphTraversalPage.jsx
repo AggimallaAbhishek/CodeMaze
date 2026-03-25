@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+import GameModeHeader from "../components/GameModeHeader";
+import GameStatsGrid from "../components/GameStatsGrid";
 import GraphTraversalBoard from "../components/GraphTraversalBoard";
 import PageFeedback from "../components/PageFeedback";
 import ResultOverlay from "../components/ResultOverlay";
@@ -106,6 +108,16 @@ export default function GraphTraversalPage() {
   const mode = level?.config?.mode ?? "bfs";
   const startNode = level?.config?.start ?? "";
   const canonicalOrder = useMemo(() => canonicalTraversal(adjacency, startNode, mode), [adjacency, mode, startNode]);
+  const roundStats = useMemo(
+    () => [
+      { label: "Visited Nodes", value: visitedNodes.length },
+      { label: "Timer", value: `${elapsedSeconds}s` },
+      { label: "Session TTL", value: `${expiresIn}s` },
+      { label: "Hints Used", value: hintsUsed },
+      { label: "Target Steps", value: canonicalOrder.length }
+    ],
+    [canonicalOrder.length, elapsedSeconds, expiresIn, hintsUsed, visitedNodes.length]
+  );
   const teaching = useMemo(
     () => traversalTeachingState(adjacency, startNode, mode, visitedNodes.length),
     [adjacency, startNode, mode, visitedNodes.length]
@@ -182,43 +194,17 @@ export default function GraphTraversalPage() {
   }
 
   return (
-    <section className="panel">
-      <div className="section-head">
-        <div>
-          <h1>{level?.title ?? "Graph Traversal Challenge"}</h1>
-          <p className="muted-text">
-            Mode: <strong>{mode.toUpperCase()}</strong>
-          </p>
-        </div>
-        <Link className="ghost-btn" to="/levels">
-          Back to Levels
-        </Link>
-      </div>
+    <section className="gameplay-shell graph-mode">
+      <GameModeHeader
+        tag="Traversal Lab"
+        title={level?.title ?? "Graph Traversal Challenge"}
+        subtitle="Follow canonical BFS or DFS visitation order while monitoring queue or stack behavior in real time."
+        modeValue={mode.toUpperCase()}
+      />
 
-      <div className="score-strip">
-        <div>
-          <span className="label">Visited Nodes</span>
-          <strong>{visitedNodes.length}</strong>
-        </div>
-        <div>
-          <span className="label">Timer</span>
-          <strong>{elapsedSeconds}s</strong>
-        </div>
-        <div>
-          <span className="label">Session TTL</span>
-          <strong>{expiresIn}s</strong>
-        </div>
-        <div>
-          <span className="label">Hints Used</span>
-          <strong>{hintsUsed}</strong>
-        </div>
-        <div>
-          <span className="label">Target Steps</span>
-          <strong>{canonicalOrder.length}</strong>
-        </div>
-      </div>
+      <GameStatsGrid stats={roundStats} />
 
-      <div className="teaching-panel">
+      <div className="teaching-panel gameplay-teaching-panel">
         <div>
           <span className="label">{teaching.containerType === "queue" ? "Queue Preview" : "Stack Preview"}</span>
           <p>{teaching.container.length ? teaching.container.join(" -> ") : "Empty"}</p>
@@ -233,21 +219,26 @@ export default function GraphTraversalPage() {
         </div>
       </div>
 
-      <GraphTraversalBoard
-        adjacency={adjacency}
-        positions={level?.config?.positions ?? {}}
-        visitedNodes={visitedNodes}
-        startNode={startNode}
-        nextExpected={teaching.nextExpected}
-        hintNode={hintPreview?.node ?? null}
-        onVisitNode={visitNode}
-        disabled={status !== "playing"}
-      />
+      <article className="gameplay-board-card">
+        <GraphTraversalBoard
+          adjacency={adjacency}
+          positions={level?.config?.positions ?? {}}
+          visitedNodes={visitedNodes}
+          startNode={startNode}
+          nextExpected={teaching.nextExpected}
+          hintNode={hintPreview?.node ?? null}
+          onVisitNode={visitNode}
+          disabled={status !== "playing"}
+        />
+      </article>
 
-      {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      <div className="gameplay-message-stack">
+        <p className="muted-text gameplay-note">Follow the expected frontier order to maximize score and stars.</p>
+        {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
+        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      </div>
 
-      <div className="action-row">
+      <div className="action-row gameplay-actions">
         <button type="button" className="ghost-btn" onClick={undoStep} disabled={status !== "playing" || visitedNodes.length <= 1}>
           Undo
         </button>

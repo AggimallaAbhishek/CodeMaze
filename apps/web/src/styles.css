@@ -506,6 +506,158 @@ select {
   gap: 12px;
 }
 
+.gameplay-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.gameplay-header-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(140deg, rgba(8, 13, 26, 0.95), rgba(10, 18, 33, 0.86)),
+    radial-gradient(circle at top right, rgba(0, 245, 255, 0.1), transparent 42%);
+  box-shadow: var(--shadow-card);
+}
+
+.gameplay-header-card::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 180px;
+  height: 3px;
+  background: var(--accent);
+}
+
+.gameplay-shell.pathfinding-mode .gameplay-header-card::after {
+  background: var(--accent-3);
+}
+
+.gameplay-shell.graph-mode .gameplay-header-card::after {
+  background: var(--accent-4);
+}
+
+.gameplay-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.gameplay-tag {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(0, 245, 255, 0.08);
+  border: 1px solid rgba(0, 245, 255, 0.16);
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gameplay-shell.pathfinding-mode .gameplay-tag {
+  background: rgba(255, 0, 170, 0.1);
+  border-color: rgba(255, 0, 170, 0.2);
+}
+
+.gameplay-shell.graph-mode .gameplay-tag {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.2);
+}
+
+.gameplay-mode-chip {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.gameplay-mode-chip strong {
+  color: var(--text-strong);
+}
+
+.gameplay-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gameplay-title {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+}
+
+.gameplay-subtitle {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--muted);
+}
+
+.gameplay-back-btn {
+  align-self: center;
+}
+
+.gameplay-stat-strip {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.gameplay-stat-card {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(8, 14, 28, 0.84);
+  padding: 12px 14px;
+}
+
+.gameplay-stat-card strong {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--text-strong);
+}
+
+.gameplay-stat-card small {
+  color: var(--muted-2);
+  font-size: 0.75rem;
+}
+
+.gameplay-board-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+}
+
+.gameplay-message-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.gameplay-note {
+  margin: 0;
+}
+
+.gameplay-actions {
+  margin-top: 0;
+}
+
 .level-grid {
   margin-top: 20px;
   display: grid;
@@ -559,6 +711,7 @@ select {
 }
 
 .sorting-canvas-wrapper {
+  margin-top: 0;
   background: rgba(6, 16, 35, 0.75);
   border: 1px solid rgba(129, 191, 227, 0.25);
   border-radius: 12px;
@@ -609,7 +762,7 @@ select {
 }
 
 .maze-shell {
-  margin-top: 12px;
+  margin-top: 0;
   background: rgba(6, 16, 35, 0.75);
   border: 1px solid rgba(129, 191, 227, 0.25);
   border-radius: 12px;
@@ -666,8 +819,8 @@ select {
 }
 
 .teaching-panel {
-  margin-top: 14px;
-  margin-bottom: 12px;
+  margin-top: 0;
+  margin-bottom: 0;
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -685,8 +838,12 @@ select {
   word-break: break-word;
 }
 
+.gameplay-teaching-panel div {
+  background: rgba(8, 19, 37, 0.9);
+}
+
 .graph-shell {
-  margin-top: 12px;
+  margin-top: 0;
   background: rgba(6, 16, 35, 0.75);
   border: 1px solid rgba(129, 191, 227, 0.25);
   border-radius: 12px;
@@ -1829,6 +1986,11 @@ tr:nth-child(even) td {
     align-items: flex-start;
   }
 
+  .gameplay-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .leaderboard-header-modern,
   .leaderboard-footer-modern,
   .panel-title-row {
@@ -1888,6 +2050,11 @@ tr:nth-child(even) td {
   .leaderboard-score,
   .leaderboard-rank {
     font-size: 1.1rem;
+  }
+
+  .gameplay-header-card,
+  .gameplay-board-card {
+    padding: 14px;
   }
 
   .action-row > * {

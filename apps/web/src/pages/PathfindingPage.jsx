@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+import GameModeHeader from "../components/GameModeHeader";
+import GameStatsGrid from "../components/GameStatsGrid";
 import PageFeedback from "../components/PageFeedback";
 import PathfindingGrid from "../components/PathfindingGrid";
 import ResultOverlay from "../components/ResultOverlay";
@@ -106,6 +108,16 @@ export default function PathfindingPage() {
   const endCell = level?.config?.end ?? [0, 0];
   const reachedGoal = isSameCell(pathCells[pathCells.length - 1], endCell);
   const modeLabel = level?.config?.weighted ? "Dijkstra (weighted)" : "BFS (unweighted)";
+  const roundStats = useMemo(
+    () => [
+      { label: "Path Cells", value: pathCells.length },
+      { label: "Timer", value: `${elapsedSeconds}s` },
+      { label: "Session TTL", value: `${expiresIn}s` },
+      { label: "Hints Used", value: hintsUsed },
+      { label: "Goal Reached?", value: reachedGoal ? "Yes" : "No" }
+    ],
+    [elapsedSeconds, expiresIn, hintsUsed, pathCells.length, reachedGoal]
+  );
 
   const optimalPathCells = useMemo(() => {
     if (!showOptimalPath) {
@@ -188,64 +200,41 @@ export default function PathfindingPage() {
   }
 
   return (
-    <section className="panel">
-      <div className="section-head">
-        <div>
-          <h1>{level?.title ?? "Maze Challenge"}</h1>
-          <p className="muted-text">
-            Mode: <strong>{modeLabel}</strong>
-          </p>
-        </div>
-        <Link className="ghost-btn" to="/levels">
-          Back to Levels
-        </Link>
-      </div>
-
-      <div className="score-strip">
-        <div>
-          <span className="label">Path Cells</span>
-          <strong>{pathCells.length}</strong>
-        </div>
-        <div>
-          <span className="label">Timer</span>
-          <strong>{elapsedSeconds}s</strong>
-        </div>
-        <div>
-          <span className="label">Session TTL</span>
-          <strong>{expiresIn}s</strong>
-        </div>
-        <div>
-          <span className="label">Hints Used</span>
-          <strong>{hintsUsed}</strong>
-        </div>
-        <div>
-          <span className="label">Goal Reached?</span>
-          <strong>{reachedGoal ? "Yes" : "No"}</strong>
-        </div>
-      </div>
-
-      <p className="muted-text">
-        Click adjacent open cells to draw a route from <strong>S</strong> to <strong>E</strong>. You can undo/redo
-        before submitting.
-      </p>
-
-      <PathfindingGrid
-        grid={level?.config?.grid ?? []}
-        weights={level?.config?.weights ?? []}
-        pathCells={pathCells}
-        optimalPathCells={optimalPathCells}
-        hintCell={hintPreview?.cell ?? null}
-        start={level?.config?.start ?? [0, 0]}
-        end={level?.config?.end ?? [0, 0]}
-        weighted={Boolean(level?.config?.weighted)}
-        onSelectCell={appendCell}
-        disabled={status !== "playing"}
+    <section className="gameplay-shell pathfinding-mode">
+      <GameModeHeader
+        tag="Pathfinding Maze"
+        title={level?.title ?? "Maze Challenge"}
+        subtitle="Draw a contiguous route from start to end and compare your run against the canonical shortest path."
+        modeValue={modeLabel}
       />
 
-      {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      <GameStatsGrid stats={roundStats} />
 
-      <div className="action-row">
+      <article className="gameplay-board-card">
+        <PathfindingGrid
+          grid={level?.config?.grid ?? []}
+          weights={level?.config?.weights ?? []}
+          pathCells={pathCells}
+          optimalPathCells={optimalPathCells}
+          hintCell={hintPreview?.cell ?? null}
+          start={level?.config?.start ?? [0, 0]}
+          end={level?.config?.end ?? [0, 0]}
+          weighted={Boolean(level?.config?.weighted)}
+          onSelectCell={appendCell}
+          disabled={status !== "playing"}
+        />
+      </article>
+
+      <div className="gameplay-message-stack">
+        <p className="muted-text gameplay-note">
+          Click adjacent open cells to draw a route from <strong>S</strong> to <strong>E</strong>. You can undo/redo
+          before submitting.
+        </p>
+        {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
+        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      </div>
+
+      <div className="action-row gameplay-actions">
         <button type="button" className="ghost-btn" onClick={undoStep} disabled={status !== "playing" || pathCells.length <= 1}>
           Undo
         </button>

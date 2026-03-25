@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+import GameModeHeader from "../components/GameModeHeader";
+import GameStatsGrid from "../components/GameStatsGrid";
 import PageFeedback from "../components/PageFeedback";
 import ResultOverlay from "../components/ResultOverlay";
 import SortingCanvas from "../components/SortingCanvas";
@@ -99,6 +101,16 @@ export default function SortingPage() {
   }, [incrementTimer, status]);
 
   const solvedLocally = useMemo(() => isSorted(workingArray), [workingArray]);
+  const roundStats = useMemo(
+    () => [
+      { label: "Moves", value: moves.length },
+      { label: "Timer", value: `${elapsedSeconds}s` },
+      { label: "Session TTL", value: `${expiresIn}s` },
+      { label: "Hints Used", value: hintsUsed },
+      { label: "Sorted?", value: solvedLocally ? "Yes" : "No" }
+    ],
+    [elapsedSeconds, expiresIn, hintsUsed, moves.length, solvedLocally]
+  );
 
   async function handleSubmit() {
     if (!sessionId || !level) {
@@ -171,54 +183,34 @@ export default function SortingPage() {
   }
 
   return (
-    <section className="panel">
-      <div className="section-head">
-        <div>
-          <h1>{level?.title ?? "Sorting Challenge"}</h1>
-          <p className="muted-text">
-            Algorithm: <strong>{level?.config?.algorithm ?? "selection"}</strong>
-          </p>
-        </div>
-        <Link className="ghost-btn" to="/levels">
-          Back to Levels
-        </Link>
-      </div>
-
-      <div className="score-strip">
-        <div>
-          <span className="label">Moves</span>
-          <strong>{moves.length}</strong>
-        </div>
-        <div>
-          <span className="label">Timer</span>
-          <strong>{elapsedSeconds}s</strong>
-        </div>
-        <div>
-          <span className="label">Session TTL</span>
-          <strong>{expiresIn}s</strong>
-        </div>
-        <div>
-          <span className="label">Hints Used</span>
-          <strong>{hintsUsed}</strong>
-        </div>
-        <div>
-          <span className="label">Sorted?</span>
-          <strong>{solvedLocally ? "Yes" : "No"}</strong>
-        </div>
-      </div>
-
-      <SortingCanvas
-        values={workingArray}
-        selectedIndex={selectedIndex}
-        hintIndices={hintPreview?.indices ?? []}
-        onSelectBar={selectBar}
-        disabled={status !== "playing"}
+    <section className="gameplay-shell sorting-mode">
+      <GameModeHeader
+        tag="Sorting Arena"
+        title={level?.title ?? "Sorting Challenge"}
+        subtitle="Swap bars to reconstruct sorted order, then submit the move log for server-side scoring and replay."
+        modeLabel="Algorithm"
+        modeValue={level?.config?.algorithm ?? "selection"}
       />
 
-      {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
-      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      <GameStatsGrid stats={roundStats} />
 
-      <div className="action-row">
+      <article className="gameplay-board-card">
+        <SortingCanvas
+          values={workingArray}
+          selectedIndex={selectedIndex}
+          hintIndices={hintPreview?.indices ?? []}
+          onSelectBar={selectBar}
+          disabled={status !== "playing"}
+        />
+      </article>
+
+      <div className="gameplay-message-stack">
+        <p className="muted-text gameplay-note">Select two bar positions to perform each swap in the arena controls.</p>
+        {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
+        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      </div>
+
+      <div className="action-row gameplay-actions">
         <button type="button" className="ghost-btn" disabled={loadingHint || status !== "playing"} onClick={handleHint}>
           {loadingHint ? "Loading Hint..." : "Use Hint (-10)"}
         </button>
