@@ -19,6 +19,7 @@ from game.serializers import (
     ReplaySerializer,
     SubmissionCreateSerializer,
     SubmissionSerializer,
+    validate_moves_for_game_type,
 )
 from game.services import create_game_session, get_game_session, increment_session_hints
 from leaderboard.progression import award_badges_for_submission, build_progression_snapshot
@@ -132,12 +133,13 @@ class HintView(APIView):
 
         level = generics.get_object_or_404(Level, id=level_id, is_active=True)
         session = _load_valid_session(request, level, serializer.validated_data["session_id"])
+        user_moves = validate_moves_for_game_type(level.game_type, serializer.validated_data["moves"])
 
         try:
             hint = generate_hint(
                 game_type=level.game_type,
                 level_config=level.config,
-                user_moves=serializer.validated_data["moves"],
+                user_moves=user_moves,
             )
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)}) from exc
@@ -177,7 +179,7 @@ class SubmissionCreateView(APIView):
         level = generics.get_object_or_404(Level, id=serializer.validated_data["level_id"], is_active=True)
         session = _load_valid_session(request, level, serializer.validated_data["session_id"])
 
-        user_moves = serializer.validated_data["moves"]
+        user_moves = validate_moves_for_game_type(level.game_type, serializer.validated_data["moves"])
         client_hints_used = serializer.validated_data["hints_used"]
         session_hints_used = int(session.get("hints_used", 0))
         effective_hints_used = max(client_hints_used, session_hints_used)

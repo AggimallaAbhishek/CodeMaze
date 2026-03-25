@@ -8,6 +8,7 @@ from django.utils import timezone
 from redis.exceptions import RedisError
 
 from game.models import GameSession, Level, Submission
+from game.serializers import MAX_MOVES_PER_REQUEST
 
 
 @pytest.mark.django_db
@@ -585,3 +586,126 @@ def test_submission_rejects_malformed_payload(auth_client):
         format="json",
     )
     assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_submission_rejects_invalid_sorting_move_shape(auth_client):
+    level = Level.objects.create(
+        title="Sorting Validation Test",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=7,
+    )
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [{"type": "swap", "indices": [0]}],
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "moves" in response.data
+
+
+@pytest.mark.django_db
+def test_hint_rejects_invalid_pathfinding_move_shape(auth_client):
+    level = Level.objects.create(
+        title="Pathfinding Hint Validation Test",
+        game_type=Level.GameType.PATHFINDING,
+        difficulty=2,
+        config={
+            "grid": [[0, 0], [0, 0]],
+            "start": [0, 0],
+            "end": [1, 1],
+            "weighted": False,
+            "mode": "bfs",
+        },
+        optimal_steps=3,
+        is_active=True,
+        order_index=8,
+    )
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    response = auth_client.post(
+        f"/api/v1/levels/{level.id}/hint",
+        {
+            "session_id": start_response.data["session_id"],
+            "moves": [{"type": "path_cell", "indices": [0, 0]}],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "moves" in response.data
+
+
+@pytest.mark.django_db
+def test_submission_rejects_unknown_move_type_for_game(auth_client):
+    level = Level.objects.create(
+        title="Graph Validation Test",
+        game_type=Level.GameType.GRAPH_TRAVERSAL,
+        difficulty=2,
+        config={"adjacency": {"A": ["B"], "B": []}, "start": "A", "mode": "bfs"},
+        optimal_steps=2,
+        is_active=True,
+        order_index=9,
+    )
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [{"type": "swap", "indices": [0, 1]}],
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "moves" in response.data
+
+
+@pytest.mark.django_db
+def test_submission_rejects_oversized_move_payload(auth_client):
+    level = Level.objects.create(
+        title="Oversized Sorting Validation Test",
+        game_type=Level.GameType.SORTING,
+        difficulty=1,
+        config={"algorithm": "selection", "array": [3, 1, 2]},
+        optimal_steps=2,
+        is_active=True,
+        order_index=10,
+    )
+    start_response = auth_client.post(f"/api/v1/levels/{level.id}/start", {}, format="json")
+    assert start_response.status_code == 201
+
+    response = auth_client.post(
+        "/api/v1/submissions",
+        {
+            "session_id": start_response.data["session_id"],
+            "level_id": str(level.id),
+            "moves": [{"type": "swap", "indices": [0, 1]}] * (MAX_MOVES_PER_REQUEST + 1),
+            "hints_used": 0,
+            "time_elapsed": 0,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data["moves"][0].startswith("Move payload exceeds")
