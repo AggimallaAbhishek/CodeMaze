@@ -136,6 +136,7 @@ test("register, play sorting level, and view score overlay", async ({ page }) =>
   await page.getByLabel("Username").fill("newuser");
   await page.getByLabel("Password").fill("StrongPass123!");
   await page.getByRole("button", { name: "Create Account" }).click();
+  await expect(page).toHaveURL(/\/levels$/);
 
   await page.goto(`/levels/${levelId}/sorting`);
   await page.getByRole("button", { name: "Use Hint (-10)" }).click();
@@ -150,5 +151,5 @@ test("register, play sorting level, and view score overlay", async ({ page }) =>
   await expect(page.getByText("First Clear")).toBeVisible();
   await page.getByRole("link", { name: "Review Replay" }).click();
   await expect(page.getByRole("heading", { name: "Sorting Test" })).toBeVisible();
-  await expect(page.getByText("Aligned")).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Aligned" }).first()).toBeVisible();
 });

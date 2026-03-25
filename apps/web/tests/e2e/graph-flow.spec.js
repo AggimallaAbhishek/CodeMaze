@@ -86,6 +86,7 @@ test("register, play graph traversal level, and view result overlay", async ({ p
   await page.getByLabel("Username").fill("graphuser");
   await page.getByLabel("Password").fill("StrongPass123!");
   await page.getByRole("button", { name: "Create Account" }).click();
+  await expect(page).toHaveURL(/\/levels$/);
 
   await page.goto(`/levels/${levelId}/graph-traversal`);
   await page.getByRole("button", { name: "Visit node B" }).click();
