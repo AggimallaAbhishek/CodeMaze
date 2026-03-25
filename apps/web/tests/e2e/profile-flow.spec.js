@@ -98,6 +98,7 @@ test("loads profile progression and recent replays", async ({ page }) => {
   await page.getByLabel("Username").fill("profileuser");
   await page.getByLabel("Password").fill("StrongPass123!");
   await page.getByRole("button", { name: "Create Account" }).click();
+  await expect(page).toHaveURL(/\/levels$/);
 
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "profileuser" })).toBeVisible();

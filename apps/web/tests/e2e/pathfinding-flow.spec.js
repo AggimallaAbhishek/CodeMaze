@@ -88,6 +88,7 @@ test("register, play pathfinding maze, and view result overlay", async ({ page }
   await page.getByLabel("Username").fill("mazeuser");
   await page.getByLabel("Password").fill("StrongPass123!");
   await page.getByRole("button", { name: "Create Account" }).click();
+  await expect(page).toHaveURL(/\/levels$/);
 
   await page.goto(`/levels/${levelId}/pathfinding`);
   await page.getByRole("button", { name: "Cell 1,2" }).click();
