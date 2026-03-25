@@ -45,3 +45,11 @@ class PublicProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "avatar_url", "total_xp", "join_date"]
+
+
+class EmailVerificationConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=1024)
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField(max_length=4096)
