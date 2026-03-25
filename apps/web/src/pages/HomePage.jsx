@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import ArenaShowcase from "../components/ArenaShowcase";
+import CodeMazeCipherBanner from "../components/CodeMazeCipherBanner";
 import ModeCard from "../components/ModeCard";
 import PageFeedback from "../components/PageFeedback";
 import { getGlobalLeaderboard, getLevels } from "../lib/apiClient";
@@ -279,6 +280,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <CodeMazeCipherBanner />
 
       <section className="home-section" id="modes-showcase">
         <div className="section-stack center">

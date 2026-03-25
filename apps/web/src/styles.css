@@ -2078,6 +2078,81 @@ tr:nth-child(even) td {
   }
 }
 
+.codemaze-banner-shell {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  min-height: clamp(120px, 16vw, 240px);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0, 245, 255, 0.11);
+  background:
+    linear-gradient(90deg, rgba(0, 245, 255, 0.07), rgba(155, 0, 255, 0.12), rgba(0, 245, 255, 0.06)),
+    rgba(6, 11, 22, 0.82);
+  box-shadow: var(--shadow-card);
+  padding: clamp(10px, 1.5vw, 20px) clamp(8px, 1vw, 16px);
+}
+
+.codemaze-banner-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 45%),
+    radial-gradient(circle at 20% 100%, rgba(0, 245, 255, 0.18), transparent 52%);
+  pointer-events: none;
+}
+
+.codemaze-banner-shell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), transparent);
+  pointer-events: none;
+}
+
+.codemaze-cipher-text {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+}
+
+.codemaze-cipher-char {
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 10.8vw, 9.5rem);
+  line-height: 0.82;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  user-select: none;
+  transition: color 100ms linear, text-shadow 120ms linear;
+}
+
+.codemaze-cipher-char.scramble {
+  color: rgba(131, 159, 188, 0.42);
+  text-shadow: 0 0 10px rgba(105, 132, 163, 0.28);
+}
+
+.codemaze-cipher-char.resolved {
+  color: var(--text-strong);
+  text-shadow: 0 0 18px rgba(0, 245, 255, 0.35);
+}
+
+.codemaze-cipher-char.resolved:nth-child(-n + 4) {
+  color: rgba(119, 242, 255, 0.98);
+}
+
+.codemaze-cipher-char.resolved:nth-child(n + 5) {
+  color: rgba(255, 70, 188, 0.96);
+}
+
 .modes-grid {
   display: grid;
   gap: clamp(18px, 2.2vw, 28px);
@@ -2774,6 +2849,14 @@ tr:nth-child(even) td {
 
   .hero-shell {
     padding: 22px;
+  }
+
+  .codemaze-banner-shell {
+    min-height: clamp(90px, 20vw, 132px);
+  }
+
+  .codemaze-cipher-char {
+    font-size: clamp(1.6rem, 11.6vw, 4.8rem);
   }
 
   .hero-title {

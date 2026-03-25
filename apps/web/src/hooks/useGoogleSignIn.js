@@ -86,6 +86,10 @@ export function useGoogleSignIn({ clientId, onCredential, onError }) {
 
             try {
               await onCredentialRef.current(response.credential);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : "Google sign-in failed.";
+              console.debug("google_signin_credential_failed", { message });
+              onErrorRef.current?.(message);
             } finally {
               if (!cancelled) {
                 setLoading(false);

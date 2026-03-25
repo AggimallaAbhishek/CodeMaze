@@ -87,3 +87,12 @@ Monorepo for the Algorithm Puzzle Game platform.
 - `make api-test`: run backend tests.
 - `make web-test`: run frontend unit tests.
 - `make web-e2e`: run Playwright browser automation tests.
+
+## Google Auth Env
+
+Set these in `.env` before using Google sign-in:
+
+- `GOOGLE_OAUTH_CLIENT_ID`: used by Django to validate Google token audience.
+- `VITE_GOOGLE_CLIENT_ID`: used by React Google Sign-In UI.
+
+For local development, both values should be the same Google OAuth Web Client ID.

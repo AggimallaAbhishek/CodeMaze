@@ -8,6 +8,8 @@ const navigateMock = vi.fn();
 const setAuthSessionMock = vi.fn();
 const loginUserMock = vi.fn();
 const getCurrentUserMock = vi.fn();
+const startGoogleSignInMock = vi.fn();
+const useGoogleSignInMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -22,6 +24,10 @@ vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: (selector) => selector({ setAuthSession: setAuthSessionMock })
 }));
 
+vi.mock("../../hooks/useGoogleSignIn", () => ({
+  useGoogleSignIn: (...args) => useGoogleSignInMock(...args)
+}));
+
 vi.mock("../../lib/apiClient", () => ({
   loginUser: (...args) => loginUserMock(...args),
   getCurrentUser: (...args) => getCurrentUserMock(...args)
@@ -33,6 +39,13 @@ describe("LoginPage", () => {
     setAuthSessionMock.mockReset();
     loginUserMock.mockReset();
     getCurrentUserMock.mockReset();
+    startGoogleSignInMock.mockReset();
+    useGoogleSignInMock.mockReset();
+    useGoogleSignInMock.mockReturnValue({
+      ready: true,
+      loading: false,
+      start: startGoogleSignInMock
+    });
   });
 
   it("shows validation errors for empty and invalid fields", async () => {
@@ -101,5 +114,18 @@ describe("LoginPage", () => {
       });
       expect(navigateMock).toHaveBeenCalledWith("/levels/next", { replace: true });
     });
+  });
+
+  it("starts google sign-in when the google button is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole("button", { name: /Continue with Google/i }));
+    expect(startGoogleSignInMock).toHaveBeenCalledTimes(1);
   });
 });
