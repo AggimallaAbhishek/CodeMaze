@@ -68,11 +68,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <section className="panel profile-shell">
+    <section className="dashboard-page-shell">
       <div className="section-head">
-        <div>
-          <h1>{user?.username ?? "Player Profile"}</h1>
-          <p className="muted-text">Track XP growth, earned badges, and recent replay-ready runs.</p>
+        <div className="section-stack">
+          <p className="section-label">Player Hub</p>
+          <h1 className="section-title">{user?.username ?? "Player Profile"}</h1>
+          <p className="section-subtitle">Track XP growth, unlocked badges, replayable runs, and progression metrics in one command panel.</p>
         </div>
         <Link className="ghost-btn" to="/levels">
           Back to Levels
@@ -81,85 +82,131 @@ export default function ProfilePage() {
 
       {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
 
-      <div className="profile-grid">
-        <article className="profile-card">
-          <span className="label">Current Level</span>
-          <strong>{user?.progression?.level ?? 1}</strong>
-          <p className="muted-text">
-            {user?.progression?.xp_into_level ?? 0} / {user?.progression?.xp_for_next_level ?? 100} XP in this level
-          </p>
-        </article>
-        <article className="profile-card">
-          <span className="label">Total XP</span>
-          <strong>{user?.total_xp ?? 0}</strong>
-          <p className="muted-text">{user?.progression?.xp_to_next_level ?? 0} XP to next level</p>
-        </article>
-        <article className="profile-card">
-          <span className="label">Solved Runs</span>
-          <strong>{user?.stats?.solved_count ?? 0}</strong>
-          <p className="muted-text">Best score: {user?.stats?.best_score ?? 0}</p>
-        </article>
-        <article className="profile-card">
-          <span className="label">Personal Bests</span>
-          <strong>{user?.stats?.personal_best_count ?? 0}</strong>
-          <p className="muted-text">Verified account: {user?.is_verified ? "Yes" : "No"}</p>
-        </article>
-      </div>
-
-      <div className="profile-sections">
-        <section className="profile-card tall">
-          <h2>Badges</h2>
-          {(user?.badges ?? []).length ? (
-            <div className="badge-grid">
-              {(user?.badges ?? []).map((badge) => (
-                <article key={badge.code} className="badge-card">
-                  <strong>{badge.title}</strong>
-                  <p className="muted-text">{badge.description}</p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="muted-text">No badges earned yet. Submit a validated puzzle run to start unlocking them.</p>
-          )}
-        </section>
-
-        <section className="profile-card tall">
-          <div className="section-head compact">
-            <div>
-              <h2>Recent Runs</h2>
-              <p className="muted-text">Latest submissions with replay access.</p>
-            </div>
-            <Link className="ghost-btn" to="/leaderboard">
-              Leaderboard
-            </Link>
+      <div className="dashboard-grid-modern">
+        <article className="identity-card">
+          <div className="identity-avatar" aria-hidden="true">
+            🧑‍💻
           </div>
-          <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Level</th>
-                  <th>Mode</th>
-                  <th>Score</th>
-                  <th>Stars</th>
-                  <th>Replay</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((submission) => (
-                  <tr key={submission.id}>
-                    <td>{submission.level.title}</td>
-                    <td>{gameTypeLabel(submission.level.game_type)}</td>
-                    <td>{submission.score}</td>
-                    <td>{submission.stars}</td>
-                    <td>
-                      <Link to={`/replay/${submission.id}`}>Open</Link>
-                    </td>
-                  </tr>
+          <div className="identity-name">{user?.username ?? "Player"}</div>
+          <div className="identity-rank">
+            {user?.is_verified ? "Verified operator" : "Verification pending"} • Level {user?.progression?.level ?? 1}
+          </div>
+          <div className="xp-track-shell">
+            <div className="xp-track-labels">
+              <span>XP Progress</span>
+              <span>
+                {user?.progression?.xp_into_level ?? 0} / {user?.progression?.xp_for_next_level ?? 100}
+              </span>
+            </div>
+            <div className="xp-track-modern">
+              <div
+                className="xp-fill-modern"
+                style={{
+                  width: `${
+                    user?.progression?.xp_for_next_level
+                      ? Math.round(((user.progression.xp_into_level ?? 0) / user.progression.xp_for_next_level) * 100)
+                      : 0
+                  }%`
+                }}
+              />
+            </div>
+          </div>
+          <div className="identity-stat-grid">
+            <div className="identity-stat">
+              <strong>{user?.stats?.solved_count ?? 0}</strong>
+              <span>Solved</span>
+            </div>
+            <div className="identity-stat">
+              <strong>{user?.stats?.best_score ?? 0}</strong>
+              <span>Best Score</span>
+            </div>
+            <div className="identity-stat">
+              <strong>{user?.stats?.personal_best_count ?? 0}</strong>
+              <span>Best Runs</span>
+            </div>
+            <div className="identity-stat">
+              <strong>{user?.total_xp ?? 0}</strong>
+              <span>Total XP</span>
+            </div>
+          </div>
+        </article>
+
+        <div className="dashboard-stack-modern">
+          <div className="summary-stat-grid">
+            <article className="summary-stat-card cyan">
+              <span className="summary-icon">🏆</span>
+              <strong>{user?.total_xp ?? 0}</strong>
+              <span>Total XP</span>
+            </article>
+            <article className="summary-stat-card magenta">
+              <span className="summary-icon">🎯</span>
+              <strong>{user?.stats?.solved_count ?? 0}</strong>
+              <span>Validated Clears</span>
+            </article>
+            <article className="summary-stat-card green">
+              <span className="summary-icon">📈</span>
+              <strong>{user?.progression?.xp_to_next_level ?? 0}</strong>
+              <span>XP To Next Level</span>
+            </article>
+          </div>
+
+          <article className="dashboard-panel">
+            <div className="panel-title-row">
+              <h2>Badges</h2>
+              <span className="muted-text">{(user?.badges ?? []).length} unlocked</span>
+            </div>
+            {(user?.badges ?? []).length ? (
+              <div className="achievement-grid-modern">
+                {(user?.badges ?? []).map((badge) => (
+                  <article key={badge.code} className="achievement-card unlocked">
+                    <strong>{badge.title}</strong>
+                    <span>{badge.description}</span>
+                  </article>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              </div>
+            ) : (
+              <p className="muted-text">No badges earned yet. Submit a validated puzzle run to start unlocking them.</p>
+            )}
+          </article>
+
+          <article className="dashboard-panel">
+            <div className="section-head compact">
+              <div>
+                <h2>Recent Runs</h2>
+                <p className="muted-text">Latest submissions with replay access.</p>
+              </div>
+              <Link className="ghost-btn" to="/leaderboard">
+                Leaderboard
+              </Link>
+            </div>
+            <div className="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Level</th>
+                    <th>Mode</th>
+                    <th>Score</th>
+                    <th>Stars</th>
+                    <th>Replay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map((submission) => (
+                    <tr key={submission.id}>
+                      <td>{submission.level.title}</td>
+                      <td>{gameTypeLabel(submission.level.game_type)}</td>
+                      <td>{submission.score}</td>
+                      <td>{submission.stars}</td>
+                      <td>
+                        <Link to={`/replay/${submission.id}`}>Open</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
   );

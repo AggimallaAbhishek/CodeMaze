@@ -8,6 +8,7 @@ import { getCurrentUser, refreshAccessToken } from "./lib/apiClient";
 import { useAuthStore } from "./store/useAuthStore";
 
 const GraphTraversalPage = lazy(() => import("./pages/GraphTraversalPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const LevelsPage = lazy(() => import("./pages/LevelsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -16,15 +17,6 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ReplayPage = lazy(() => import("./pages/ReplayPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const SortingPage = lazy(() => import("./pages/SortingPage"));
-
-function HomeRedirect() {
-  const authReady = useAuthStore((state) => state.authReady);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  if (!authReady) {
-    return <PageFeedback panel>Restoring session...</PageFeedback>;
-  }
-  return <Navigate to={isAuthenticated ? "/levels" : "/login"} replace />;
-}
 
 export default function App() {
   const beginAuthBootstrap = useAuthStore((state) => state.beginAuthBootstrap);
@@ -71,7 +63,7 @@ export default function App() {
     <Layout>
       <Suspense fallback={<PageFeedback panel>Loading page...</PageFeedback>}>
         <Routes>
-          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route

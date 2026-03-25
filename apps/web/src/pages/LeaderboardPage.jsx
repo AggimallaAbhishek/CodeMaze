@@ -81,76 +81,120 @@ export default function LeaderboardPage() {
   }, [accessToken, scope, selectedLevelId]);
 
   return (
-    <section className="panel">
+    <section className="leaderboard-page-shell">
       <div className="section-head">
-        <div>
-          <h1>{selectedLevelId ? "Level Leaderboard" : "Global Leaderboard"}</h1>
-          <p className="muted-text">Switch between scope snapshots and per-level rankings without leaving the page.</p>
+        <div className="section-stack">
+          <p className="section-label">Rankings</p>
+          <h1 className="section-title">{selectedLevelId ? "Level Leaderboard" : "Global Leaderboard"}</h1>
+          <p className="section-subtitle">Switch between scope snapshots and per-level views without leaving the arena.</p>
         </div>
       </div>
 
-      <div className="filter-row">
-        <div className="scope-tabs" role="tablist" aria-label="Leaderboard scopes">
-          {scopes.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={scope === item.value ? "ghost-btn active" : "ghost-btn"}
-              onClick={() => setScope(item.value)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      <div className="leaderboard-layout-modern">
+        <article className="leaderboard-card-modern">
+          <div className="leaderboard-header-modern">
+            <div>
+              <h2>Active Standings</h2>
+              <p className="muted-text">Redis-backed snapshots with optional per-level focus.</p>
+            </div>
+            <div className="filter-row leaderboard-controls">
+              <div className="scope-tabs" role="tablist" aria-label="Leaderboard scopes">
+                {scopes.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={scope === item.value ? "ghost-btn active" : "ghost-btn"}
+                    onClick={() => setScope(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
-        <label className="select-field">
-          <span className="label">Level Filter</span>
-          <select value={selectedLevelId} onChange={(event) => setSelectedLevelId(event.target.value)}>
-            <option value="">All Levels</option>
-            {levels.map((level) => (
-              <option key={level.id} value={level.id}>
-                {level.title}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {userRank ? (
-        <div className="score-strip compact">
-          <div>
-            <span className="label">Your Rank</span>
-            <strong>{userRank.rank}</strong>
+              <label className="select-field">
+                <span className="label">Level Filter</span>
+                <select value={selectedLevelId} onChange={(event) => setSelectedLevelId(event.target.value)}>
+                  <option value="">All Levels</option>
+                  {levels.map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
-          <div>
-            <span className="label">Your Score</span>
-            <strong>{userRank.score}</strong>
+
+          {userRank ? (
+            <div className="hero-stat-grid compact">
+              <div className="hero-stat-card">
+                <strong>{userRank.rank}</strong>
+                <span>Your Rank</span>
+              </div>
+              <div className="hero-stat-card">
+                <strong>{userRank.score}</strong>
+                <span>Your Score</span>
+              </div>
+            </div>
+          ) : null}
+
+          {loading ? <PageFeedback>Loading leaderboard...</PageFeedback> : null}
+          {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+
+          <div className="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>User</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={`${entry.user_id}-${entry.rank}`}>
+                    <td>#{entry.rank}</td>
+                    <td>{entry.username}</td>
+                    <td>{entry.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      ) : null}
+        </article>
 
-      {loading ? <PageFeedback>Loading leaderboard...</PageFeedback> : null}
-      {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
-
-      <div className="table-shell">
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>User</th>
-              <th>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={`${entry.user_id}-${entry.rank}`}>
-                <td>{entry.rank}</td>
-                <td>{entry.username}</td>
-                <td>{entry.score}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <aside className="season-card-modern">
+          <div className="season-banner-modern">
+            <strong>{selectedLevelId ? "LEVEL FOCUS" : "SEASON 3"}</strong>
+            <span>{selectedLevelId ? "Scoped challenge view active" : "Ends in 6d 14h 22m"}</span>
+          </div>
+          <h2>{selectedLevelId ? "Level Focus" : "Season Rewards"}</h2>
+          <div className="reward-stack">
+            {selectedLevelId
+              ? levels
+                  .filter((level) => level.id === selectedLevelId)
+                  .map((level) => (
+                    <div key={level.id} className="reward-row-modern">
+                      <span className="reward-rank-modern">Mode</span>
+                      <span className="reward-copy-modern">{level.title}</span>
+                      <strong>Difficulty {level.difficulty}</strong>
+                    </div>
+                  ))
+              : [
+                  ["#1", "👑", "Legend frame + exclusive seasonal badge", "10,000 XP"],
+                  ["#2", "🥈", "Silver frame + 5000 XP boost", "5,000 XP"],
+                  ["#3", "🥉", "Bronze badge + 2500 XP", "2,500 XP"],
+                  ["Top 10", "⭐", "Elite border + spotlight", "1,000 XP"]
+                ].map(([rank, icon, name, value]) => (
+                  <div key={rank} className="reward-row-modern">
+                    <span className="reward-rank-modern">{rank}</span>
+                    <span className="reward-icon-modern">{icon}</span>
+                    <span className="reward-copy-modern">{name}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+          </div>
+        </aside>
       </div>
     </section>
   );

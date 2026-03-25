@@ -1,4 +1,5 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { logoutUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
@@ -8,10 +9,27 @@ function navigationLinkClass({ isActive }) {
 }
 
 export default function Layout({ children }) {
+  const location = useLocation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
   const clearAuthSession = useAuthStore((state) => state.clearAuthSession);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") {
+      return "dark";
+    }
+    return window.localStorage.getItem("codemaze-theme") ?? "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("codemaze-theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   async function handleLogout() {
     try {
@@ -30,46 +48,120 @@ export default function Layout({ children }) {
         Skip to content
       </a>
       <header className="top-nav">
-        <Link className="brand" to="/">
-          Algorithm Puzzle Lab
-        </Link>
-        <nav className="menu-links" aria-label="Primary">
+        <div className="top-nav-shell">
+          <Link className="brand" to="/">
+            CODE<span>MAZE</span>
+          </Link>
+
+          <nav className="menu-links" aria-label="Primary">
+            <NavLink className={navigationLinkClass} to="/">
+              Home
+            </NavLink>
+            <NavLink className={navigationLinkClass} to="/levels">
+              Play
+            </NavLink>
+            <NavLink className={navigationLinkClass} to="/leaderboard">
+              Leaderboard
+            </NavLink>
+            {user ? (
+              <NavLink className={navigationLinkClass} to="/profile">
+                Dashboard
+              </NavLink>
+            ) : null}
+          </nav>
+
+          <div className="account-cluster" aria-label="Account controls">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={() => setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"))}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+            {user ? (
+              <>
+                <span className="pill">{user.username}</span>
+                <span className="pill subtle">XP {user.total_xp ?? 0}</span>
+                <Link className="primary-btn nav-cta-btn" to="/levels">
+                  Play Now
+                </Link>
+                <button className="ghost-btn" onClick={handleLogout} type="button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="ghost-btn" to="/login">
+                  Login
+                </Link>
+                <Link className="primary-btn nav-cta-btn" to="/register">
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            className={menuOpen ? "nav-toggle open" : "nav-toggle"}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+            aria-label="Toggle navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+
+        <div id="mobile-nav" className={menuOpen ? "mobile-nav open" : "mobile-nav"}>
+          <NavLink className={navigationLinkClass} to="/">
+            Home
+          </NavLink>
           <NavLink className={navigationLinkClass} to="/levels">
-            Levels
+            Play
           </NavLink>
           <NavLink className={navigationLinkClass} to="/leaderboard">
             Leaderboard
           </NavLink>
           {user ? (
             <NavLink className={navigationLinkClass} to="/profile">
-              Profile
+              Dashboard
             </NavLink>
           ) : null}
-        </nav>
-        <div className="account-cluster" aria-label="Account controls">
           {user ? (
-            <>
-              <span className="pill">{user.username}</span>
-              <span className="pill subtle">XP {user.total_xp ?? 0}</span>
-              <button className="ghost-btn" onClick={handleLogout} type="button">
-                Logout
-              </button>
-            </>
+            <button className="ghost-btn mobile-logout" onClick={handleLogout} type="button">
+              Logout
+            </button>
           ) : (
-            <>
-              <Link className="ghost-btn" to="/login">
-                Login
-              </Link>
-              <Link className="ghost-btn" to="/register">
-                Register
-              </Link>
-            </>
+            <Link className="primary-btn nav-cta-btn" to="/register">
+              Get Started
+            </Link>
           )}
         </div>
       </header>
       <main id="main-content" className="page-container" tabIndex={-1}>
         {children}
       </main>
+      <footer className="footer-shell">
+        <div className="footer-grid">
+          <div className="footer-brand-block">
+            <Link className="brand footer-brand" to="/">
+              CODE<span>MAZE</span>
+            </Link>
+            <p className="muted-text">
+              A game-first DSA training platform for sorting, pathfinding, and graph traversal mastery.
+            </p>
+          </div>
+          <div className="footer-links-block">
+            <Link to="/levels">Challenge Deck</Link>
+            <Link to="/leaderboard">Leaderboard</Link>
+            {user ? <Link to="/profile">Dashboard</Link> : <Link to="/register">Create Account</Link>}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
