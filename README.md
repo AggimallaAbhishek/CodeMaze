@@ -16,7 +16,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
-## MVP Features (Phase 0 + 4)
+## MVP Features (Phase 0 + 5)
 
 - Auth-required sorting gameplay:
   - register/login/logout with JWT and refresh token cookie
@@ -38,7 +38,11 @@ Monorepo for the Algorithm Puzzle Game platform.
   - refresh/logout cookie flows guarded by CSRF token checks
   - email verification request/confirm endpoints
   - Google ID token exchange endpoint with verified-user provisioning
-- Global and per-level leaderboard endpoints.
+- Phase 5 progression + replay:
+  - server-issued hints with session-tracked penalties
+  - replay endpoint with side-by-side move comparison data
+  - profile page data for XP, levels, badges, and recent submissions
+  - global and per-level leaderboard scopes with user-rank payloads
 - Idempotent sorting + pathfinding + graph seed commands for local bootstrap.
 
 ## Current Implementation Scope
@@ -58,6 +62,11 @@ Monorepo for the Algorithm Puzzle Game platform.
   - JWT refresh cookie hardening + logout blacklisting
   - verification and OAuth endpoints
   - auth/security regression tests
+- Phase 5 progression, leaderboard, hints, and replay implemented:
+  - badge awarding + XP progression snapshots
+  - server-tracked hint penalties on the submission pipeline
+  - profile/history UI and replay comparison route
+  - leaderboard scope switching and authenticated rank display
 
 ## Security Baseline
 
