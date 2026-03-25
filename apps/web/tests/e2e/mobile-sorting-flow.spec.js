@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { mockLoggedOutBootstrap } from "./support/auth";
+import { mockAuthSession } from "./support/auth";
 
 const levelId = "sorting-mobile-level";
 
@@ -11,18 +11,21 @@ test.use({
 });
 
 test("sorting controls remain usable on a mobile viewport", async ({ page }) => {
-  await mockLoggedOutBootstrap(page);
+  const authSession = await mockAuthSession(page);
+  const user = {
+    id: "user-mobile-1",
+    email: "mobile@example.com",
+    username: "mobileuser",
+    total_xp: 0
+  };
+
   await page.route("**/api/v1/auth/register", async (route) => {
+    authSession.setAuthenticatedUser(user);
     await route.fulfill({
       status: 201,
       contentType: "application/json",
       body: JSON.stringify({
-        user: {
-          id: "user-mobile-1",
-          email: "mobile@example.com",
-          username: "mobileuser",
-          total_xp: 0
-        },
+        user,
         access: "test-access-token"
       })
     });

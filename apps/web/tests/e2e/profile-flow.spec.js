@@ -1,69 +1,54 @@
 import { expect, test } from "@playwright/test";
 
-import { mockLoggedOutBootstrap } from "./support/auth";
+import { mockAuthSession } from "./support/auth";
 
 test("loads profile progression and recent replays", async ({ page }) => {
-  await mockLoggedOutBootstrap(page);
+  const authSession = await mockAuthSession(page);
+  const user = {
+    id: "user-profile-1",
+    email: "profile@example.com",
+    username: "profileuser",
+    total_xp: 240,
+    progression: {
+      level: 2,
+      xp_total: 240,
+      xp_into_level: 140,
+      xp_for_next_level: 150,
+      xp_to_next_level: 10,
+      progress_ratio: 0.93
+    },
+    badges: [],
+    stats: {
+      solved_count: 1,
+      best_score: 95,
+      personal_best_count: 1
+    }
+  };
+  const profileUser = {
+    ...user,
+    is_verified: true,
+    badges: [
+      {
+        code: "first_clear",
+        title: "First Clear",
+        description: "Finish any puzzle with a non-zero score."
+      }
+    ],
+    stats: {
+      solved_count: 2,
+      best_score: 95,
+      personal_best_count: 2
+    }
+  };
+
   await page.route("**/api/v1/auth/register", async (route) => {
+    authSession.setAuthenticatedUser(profileUser);
     await route.fulfill({
       status: 201,
       contentType: "application/json",
       body: JSON.stringify({
-        user: {
-          id: "user-profile-1",
-          email: "profile@example.com",
-          username: "profileuser",
-          total_xp: 240,
-          progression: {
-            level: 2,
-            xp_total: 240,
-            xp_into_level: 140,
-            xp_for_next_level: 150,
-            xp_to_next_level: 10,
-            progress_ratio: 0.93
-          },
-          badges: [],
-          stats: {
-            solved_count: 1,
-            best_score: 95,
-            personal_best_count: 1
-          }
-        },
+        user,
         access: "test-access-token"
-      })
-    });
-  });
-
-  await page.route("**/api/v1/users/me", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: "user-profile-1",
-        email: "profile@example.com",
-        username: "profileuser",
-        total_xp: 240,
-        is_verified: true,
-        progression: {
-          level: 2,
-          xp_total: 240,
-          xp_into_level: 140,
-          xp_for_next_level: 150,
-          xp_to_next_level: 10,
-          progress_ratio: 0.93
-        },
-        badges: [
-          {
-            code: "first_clear",
-            title: "First Clear",
-            description: "Finish any puzzle with a non-zero score."
-          }
-        ],
-        stats: {
-          solved_count: 2,
-          best_score: 95,
-          personal_best_count: 2
-        }
       })
     });
   });

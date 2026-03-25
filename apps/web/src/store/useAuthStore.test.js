@@ -4,12 +4,14 @@ import { useAuthStore } from "./useAuthStore";
 
 describe("useAuthStore", () => {
   afterEach(() => {
+    window.localStorage.clear();
     act(() => {
       useAuthStore.getState().clearAuthSession();
     });
   });
 
   it("keeps auth state in memory without writing tokens to localStorage", () => {
+    window.localStorage.clear();
     act(() => {
       useAuthStore.getState().setAuthSession({
         user: { id: "user-1", username: "player-one" },

@@ -1,22 +1,25 @@
 import { expect, test } from "@playwright/test";
 
-import { mockLoggedOutBootstrap } from "./support/auth";
+import { mockAuthSession } from "./support/auth";
 
 const levelId = "8beadb91-19af-4ea8-a1d8-1024ea0f3a77";
 
 test("register, play sorting level, and view score overlay", async ({ page }) => {
-  await mockLoggedOutBootstrap(page);
+  const authSession = await mockAuthSession(page);
+  const user = {
+    id: "user-1",
+    email: "new@example.com",
+    username: "newuser",
+    total_xp: 0
+  };
+
   await page.route("**/api/v1/auth/register", async (route) => {
+    authSession.setAuthenticatedUser(user);
     await route.fulfill({
       status: 201,
       contentType: "application/json",
       body: JSON.stringify({
-        user: {
-          id: "user-1",
-          email: "new@example.com",
-          username: "newuser",
-          total_xp: 0
-        },
+        user,
         access: "test-access-token"
       })
     });
