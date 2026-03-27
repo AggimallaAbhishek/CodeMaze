@@ -139,6 +139,7 @@ export default function GraphTraversalBoard({
                 onClick={() => onVisitNode(node)}
                 disabled={disabled || isVisited}
                 aria-label={buildNodeLabel(node, { isCurrent, isExpected, isHint, isStart })}
+                aria-pressed={isVisited}
               >
                 {node}
               </button>

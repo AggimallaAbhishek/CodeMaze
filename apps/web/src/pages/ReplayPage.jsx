@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import PageFeedback from "../components/PageFeedback";
 import { getSubmissionReplay } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 import { buildReplayRows } from "../utils/replay";
 
 function gameTypeLabel(gameType) {
@@ -42,7 +43,7 @@ export default function ReplayPage() {
         setReplay(payload);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load this replay right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -110,26 +111,33 @@ export default function ReplayPage() {
           </div>
 
           <div className="table-shell replay-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Step</th>
-                  <th>Your Move</th>
-                  <th>Optimal Move</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={`replay-step-${row.step}`} className={row.status === "match" ? "replay-match" : "replay-mismatch"}>
-                    <td>{row.step}</td>
-                    <td>{row.userLabel}</td>
-                    <td>{row.optimalLabel}</td>
-                    <td>{row.status === "match" ? "Aligned" : "Different"}</td>
+            {rows.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Step</th>
+                    <th>Your Move</th>
+                    <th>Optimal Move</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={`replay-step-${row.step}`} className={row.status === "match" ? "replay-match" : "replay-mismatch"}>
+                      <td>{row.step}</td>
+                      <td>{row.userLabel}</td>
+                      <td>{row.optimalLabel}</td>
+                      <td>{row.status === "match" ? "Aligned" : "Different"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="empty-state-card compact">
+                <h2>No replay steps available</h2>
+                <p>This submission does not include any replayable moves yet.</p>
+              </div>
+            )}
           </div>
         </>
       ) : null}

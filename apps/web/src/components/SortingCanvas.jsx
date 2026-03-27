@@ -74,6 +74,7 @@ export default function SortingCanvas({ values, selectedIndex, hintIndices = [],
             onClick={() => onSelectBar(index)}
             disabled={disabled}
             aria-label={`Select value ${value} at position ${index + 1}`}
+            aria-pressed={selectedIndex === index}
           >
             {index + 1}
           </button>

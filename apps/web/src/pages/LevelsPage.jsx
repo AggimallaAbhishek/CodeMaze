@@ -5,6 +5,7 @@ import ModeCard from "../components/ModeCard";
 import PageFeedback from "../components/PageFeedback";
 import { getLevels } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 function gameTypeLabel(gameType) {
   if (gameType === "sorting") {
@@ -64,7 +65,7 @@ export default function LevelsPage() {
         setLevels(data);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load challenge decks right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -133,6 +134,12 @@ export default function LevelsPage() {
 
       {loading ? <PageFeedback>Loading levels...</PageFeedback> : null}
       {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+      {!loading && !levels.length ? (
+        <div className="empty-state-card">
+          <h2>No challenges are seeded yet</h2>
+          <p>Run the seed commands for sorting, pathfinding, and graph traversal levels, then reload this page.</p>
+        </div>
+      ) : null}
 
       {Object.entries(groupedLevels).map(([gameType, items]) => (
         <section key={gameType} className="challenge-group">
@@ -151,18 +158,25 @@ export default function LevelsPage() {
           </div>
 
           <div className="modes-grid challenge-grid">
-            {items.map((level) => (
-              <ModeCard
-                key={level.id}
-                accent={gameType === "graph_traversal" ? "graph" : gameType}
-                badge={`Difficulty ${level.difficulty}`}
-                title={level.title}
-                description={`${gameTypeLabel(level.game_type)} arena with verified scoring and full replay support.`}
-                stats={[`Mode: ${gameTypeLabel(level.game_type)}`, `Deck position ${level.order_index}`]}
-                actionLabel={levelActionLabel(level.game_type)}
-                to={levelRoute(level)}
-              />
-            ))}
+            {items.length
+              ? items.map((level) => (
+                  <ModeCard
+                    key={level.id}
+                    accent={gameType === "graph_traversal" ? "graph" : gameType}
+                    badge={`Difficulty ${level.difficulty}`}
+                    title={level.title}
+                    description={`${gameTypeLabel(level.game_type)} arena with verified scoring and full replay support.`}
+                    stats={[`Mode: ${gameTypeLabel(level.game_type)}`, `Deck position ${level.order_index}`]}
+                    actionLabel={levelActionLabel(level.game_type)}
+                    to={levelRoute(level)}
+                  />
+                ))
+              : (
+                  <div className="empty-state-card compact">
+                    <h3>No {gameTypeLabel(gameType).toLowerCase()} levels available</h3>
+                    <p>This environment does not have seeded cards for this mode yet.</p>
+                  </div>
+                )}
           </div>
         </section>
       ))}

@@ -9,6 +9,7 @@ import ResultOverlay from "../components/ResultOverlay";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { usePathfindingGameStore } from "../store/usePathfindingGameStore";
+import { toActionableError } from "../utils/errors";
 import { buildPathMoves, isSameCell } from "../utils/pathfinding";
 
 export default function PathfindingPage() {
@@ -76,7 +77,7 @@ export default function PathfindingPage() {
         setSession({ sessionId: session.session_id, expiresIn: session.expires_in });
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load this maze right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -154,7 +155,7 @@ export default function PathfindingPage() {
         awardedBadges: submission.awarded_badges
       });
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Unable to submit this maze route right now. Try again in a moment."));
     } finally {
       setSubmitting(false);
     }
@@ -181,7 +182,7 @@ export default function PathfindingPage() {
       setHintPreview(hint.preview_move);
       setHintsUsed(hint.hints_used_total ?? 0);
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Hint service is temporarily unavailable for this maze."));
     } finally {
       setLoadingHint(false);
     }

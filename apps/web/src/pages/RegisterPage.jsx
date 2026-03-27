@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PageFeedback from "../components/PageFeedback";
 import { registerUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -88,7 +89,7 @@ export default function RegisterPage() {
       navigate("/levels", { replace: true });
     } catch (err) {
       console.debug("register_submit_failed", { message: err.message });
-      applyServerError(err.message || "Request failed.");
+      applyServerError(toActionableError(err, "Unable to create an account right now. Check the API connection and try again."));
     } finally {
       setLoading(false);
     }

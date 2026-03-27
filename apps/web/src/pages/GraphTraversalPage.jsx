@@ -9,6 +9,7 @@ import ResultOverlay from "../components/ResultOverlay";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { useGraphTraversalGameStore } from "../store/useGraphTraversalGameStore";
+import { toActionableError } from "../utils/errors";
 import { buildGraphMoves, canonicalTraversal, traversalTeachingState } from "../utils/graph";
 
 export default function GraphTraversalPage() {
@@ -75,7 +76,7 @@ export default function GraphTraversalPage() {
         setSession({ sessionId: session.session_id, expiresIn: session.expires_in });
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load this graph puzzle right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -149,7 +150,7 @@ export default function GraphTraversalPage() {
         awardedBadges: submission.awarded_badges
       });
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Unable to submit this traversal right now. Try again in a moment."));
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +177,7 @@ export default function GraphTraversalPage() {
       setHintPreview(hint.preview_move);
       setHintsUsed(hint.hints_used_total ?? 0);
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Hint service is temporarily unavailable for this graph puzzle."));
     } finally {
       setLoadingHint(false);
     }

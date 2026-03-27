@@ -8,6 +8,7 @@ import { useElementWidth } from "../hooks/useElementWidth";
 import { useGoogleSignIn } from "../hooks/useGoogleSignIn";
 import { getCurrentUser, googleAuth, loginUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -85,7 +86,7 @@ export default function LoginPage() {
 
   const onGoogleError = useCallback((message) => {
     console.debug("google_login_submit_failed", { message });
-    setError(message);
+    setError(toActionableError(message, "Google sign-in is temporarily unavailable. Check the popup and API settings, then try again."));
   }, []);
 
   const { ready: googleReady, renderButton: renderGoogleButton } = useGoogleSignIn({
@@ -147,7 +148,7 @@ export default function LoginPage() {
       navigate(nextRoute, { replace: true });
     } catch (err) {
       console.debug("login_submit_failed", { message: err.message });
-      setError(err.message);
+      setError(toActionableError(err, "Unable to sign in right now. Check the API connection and try again."));
     } finally {
       setLoading(false);
     }

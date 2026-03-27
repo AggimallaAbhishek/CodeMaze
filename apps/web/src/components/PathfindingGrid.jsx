@@ -53,6 +53,27 @@ export default function PathfindingGrid({
               label = String(weights?.[rowIndex]?.[colIndex] ?? 1);
             }
 
+            const labelParts = [`Cell ${rowIndex + 1},${colIndex + 1}`];
+            if (blocked) {
+              labelParts.push("blocked");
+            } else {
+              if (isStart) {
+                labelParts.push("start");
+              }
+              if (isEnd) {
+                labelParts.push("end");
+              }
+              if (weighted) {
+                labelParts.push(`weight ${weights?.[rowIndex]?.[colIndex] ?? 1}`);
+              }
+              if (isPath) {
+                labelParts.push("selected path");
+              }
+              if (isHint) {
+                labelParts.push("hinted");
+              }
+            }
+
             return (
               <button
                 key={key}
@@ -60,7 +81,8 @@ export default function PathfindingGrid({
                 className={className}
                 onClick={() => onSelectCell(cell)}
                 disabled={disabled || blocked}
-                aria-label={`Cell ${rowIndex + 1},${colIndex + 1}${blocked ? " blocked" : ""}`}
+                aria-label={labelParts.join(", ")}
+                aria-pressed={isPath}
               >
                 {label}
               </button>

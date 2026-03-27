@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PageFeedback from "../components/PageFeedback";
 import { getGlobalLeaderboard, getLevelLeaderboard, getLevels } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 const scopes = [
   { value: "all_time", label: "All Time" },
@@ -32,7 +33,7 @@ export default function LeaderboardPage() {
         setLevels(payload);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load level filters right now. Check the API connection and try again."));
         }
       }
     }
@@ -65,7 +66,7 @@ export default function LeaderboardPage() {
         setUserRank(payload.user_rank ?? null);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load leaderboard standings right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -103,6 +104,8 @@ export default function LeaderboardPage() {
                   <button
                     key={item.value}
                     type="button"
+                    role="tab"
+                    aria-selected={scope === item.value}
                     className={scope === item.value ? "ghost-btn active" : "ghost-btn"}
                     onClick={() => setScope(item.value)}
                   >
@@ -140,26 +143,34 @@ export default function LeaderboardPage() {
 
           {loading ? <PageFeedback>Loading leaderboard...</PageFeedback> : null}
           {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+          {!loading && !entries.length ? (
+            <div className="empty-state-card compact">
+              <h3>No standings available yet</h3>
+              <p>Validated submissions will appear here once this scope has recorded scores.</p>
+            </div>
+          ) : null}
 
           <div className="table-shell">
-            <table>
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>User</th>
-                  <th>Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={`${entry.user_id}-${entry.rank}`}>
-                    <td>#{entry.rank}</td>
-                    <td>{entry.username}</td>
-                    <td>{entry.score}</td>
+            {entries.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>User</th>
+                    <th>Score</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => (
+                    <tr key={`${entry.user_id}-${entry.rank}`}>
+                      <td>#{entry.rank}</td>
+                      <td>{entry.username}</td>
+                      <td>{entry.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : null}
           </div>
         </article>
 

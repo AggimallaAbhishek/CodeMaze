@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import PageFeedback from "../components/PageFeedback";
 import { getCurrentUser, getMySubmissions } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 function gameTypeLabel(gameType) {
   if (gameType === "sorting") {
@@ -48,7 +49,7 @@ export default function ProfilePage() {
         setSubmissions(recentSubmissions);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load your profile right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -180,30 +181,37 @@ export default function ProfilePage() {
               </Link>
             </div>
             <div className="table-shell">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Level</th>
-                    <th>Mode</th>
-                    <th>Score</th>
-                    <th>Stars</th>
-                    <th>Replay</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions.map((submission) => (
-                    <tr key={submission.id}>
-                      <td>{submission.level.title}</td>
-                      <td>{gameTypeLabel(submission.level.game_type)}</td>
-                      <td>{submission.score}</td>
-                      <td>{submission.stars}</td>
-                      <td>
-                        <Link to={`/replay/${submission.id}`}>Open</Link>
-                      </td>
+              {submissions.length ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Level</th>
+                      <th>Mode</th>
+                      <th>Score</th>
+                      <th>Stars</th>
+                      <th>Replay</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {submissions.map((submission) => (
+                      <tr key={submission.id}>
+                        <td>{submission.level.title}</td>
+                        <td>{gameTypeLabel(submission.level.game_type)}</td>
+                        <td>{submission.score}</td>
+                        <td>{submission.stars}</td>
+                        <td>
+                          <Link to={`/replay/${submission.id}`}>Open</Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-state-card compact">
+                  <h3>No runs recorded yet</h3>
+                  <p>Complete a validated puzzle run to unlock replay history and progression tracking.</p>
+                </div>
+              )}
             </div>
           </article>
         </div>

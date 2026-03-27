@@ -9,6 +9,7 @@ import SortingCanvas from "../components/SortingCanvas";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSortingGameStore } from "../store/useSortingGameStore";
+import { toActionableError } from "../utils/errors";
 import { isSorted } from "../utils/sorting";
 
 export default function SortingPage() {
@@ -70,7 +71,7 @@ export default function SortingPage() {
         setSession({ sessionId: session.session_id, expiresIn: session.expires_in });
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setError(toActionableError(err, "Unable to load this sorting level right now. Check the API connection and try again."));
         }
       } finally {
         if (active) {
@@ -138,7 +139,7 @@ export default function SortingPage() {
         awardedBadges: submission.awarded_badges
       });
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Unable to submit this sorting run right now. Try again in a moment."));
     } finally {
       setSubmitting(false);
     }
@@ -165,7 +166,7 @@ export default function SortingPage() {
       setHintPreview(hint.preview_move);
       setHintsUsed(hint.hints_used_total ?? 0);
     } catch (err) {
-      setError(err.message);
+      setError(toActionableError(err, "Hint service is temporarily unavailable for this sorting level."));
     } finally {
       setLoadingHint(false);
     }

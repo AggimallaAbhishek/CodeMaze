@@ -1,13 +1,38 @@
+import { useEffect, useId, useRef } from "react";
 import { Link } from "react-router-dom";
 
 export default function ResultOverlay({ result, replayHref }) {
+  const titleId = useId();
+  const panelRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  useEffect(() => {
+    if (!result) {
+      return undefined;
+    }
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panelRef.current?.focus();
+
+    return () => {
+      previousFocusRef.current?.focus?.();
+    };
+  }, [result]);
+
   if (!result) {
     return null;
   }
 
   return (
-    <section className="result-panel" aria-live="polite">
-      <h2>Round Result</h2>
+    <section
+      ref={panelRef}
+      className="result-panel"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+    >
+      <h2 id={titleId}>Round Result</h2>
       <div className="result-grid">
         <div>
           <span className="label">Score</span>

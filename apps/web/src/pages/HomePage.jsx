@@ -7,6 +7,7 @@ import ModeCard from "../components/ModeCard";
 import PageFeedback from "../components/PageFeedback";
 import { getGlobalLeaderboard, getLevels } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
+import { toActionableError } from "../utils/errors";
 
 const leaderboardScopes = [
   { value: "weekly", label: "Weekly" },
@@ -85,7 +86,8 @@ export default function HomePage() {
   const [scope, setScope] = useState("weekly");
   const [loadingLevels, setLoadingLevels] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-  const [error, setError] = useState("");
+  const [levelsError, setLevelsError] = useState("");
+  const [leaderboardError, setLeaderboardError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -98,10 +100,13 @@ export default function HomePage() {
           return;
         }
         console.debug("home_levels_loaded", { count: payload.length });
+        setLevelsError("");
         setLevels(payload);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setLevelsError(
+            toActionableError(err, "Game modes are temporarily unavailable. Check the API connection and try again.")
+          );
         }
       } finally {
         if (active) {
@@ -127,11 +132,14 @@ export default function HomePage() {
           return;
         }
         console.debug("home_leaderboard_loaded", { scope, count: payload.entries.length });
+        setLeaderboardError("");
         setEntries(payload.entries.slice(0, 5));
         setUserRank(payload.user_rank ?? null);
       } catch (err) {
         if (active) {
-          setError(err.message);
+          setLeaderboardError(
+            toActionableError(err, "Leaderboard data is temporarily unavailable. Check the API connection and try again.")
+          );
         }
       } finally {
         if (active) {
@@ -296,7 +304,13 @@ export default function HomePage() {
         </div>
 
         {loadingLevels ? <PageFeedback panel>Loading game modes...</PageFeedback> : null}
-        {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
+        {levelsError ? <PageFeedback variant="error">{levelsError}</PageFeedback> : null}
+        {!loadingLevels && !levels.length ? (
+          <div className="empty-state-card">
+            <h3>No live game modes yet</h3>
+            <p>Seeded levels have not been loaded into this environment. Start the API seed commands, then refresh.</p>
+          </div>
+        ) : null}
 
         <div className="modes-grid">{modeCards.map((card) => <ModeCard key={card.title} {...card} />)}</div>
       </section>
@@ -445,6 +459,8 @@ export default function HomePage() {
                   <button
                     key={item.value}
                     type="button"
+                    role="tab"
+                    aria-selected={scope === item.value}
                     className={scope === item.value ? "ghost-btn active" : "ghost-btn"}
                     onClick={() => setScope(item.value)}
                   >
@@ -455,6 +471,13 @@ export default function HomePage() {
             </div>
 
             {loadingLeaderboard ? <PageFeedback>Loading leaderboard...</PageFeedback> : null}
+            {leaderboardError ? <PageFeedback variant="error">{leaderboardError}</PageFeedback> : null}
+            {!loadingLeaderboard && !entries.length ? (
+              <div className="empty-state-card">
+                <h3>No leaderboard scores yet</h3>
+                <p>The ladder will populate after the first validated submissions land in this environment.</p>
+              </div>
+            ) : null}
 
             <div className="leaderboard-list-modern">
               {entries.map((entry) => (
