@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 
 from django.db import transaction
 from django.db.models import F, Q
@@ -11,6 +12,7 @@ from rest_framework.views import APIView
 
 from algorithm_engine.hints import generate_hint
 from algorithm_engine.validator import validate_submission
+from common.observability import log_timed_event
 from game.models import Level, Submission
 from game.serializers import (
     HintRequestSerializer,
@@ -31,6 +33,20 @@ logger = logging.getLogger(__name__)
 class LevelListView(generics.ListAPIView):
     serializer_class = LevelListSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().list(request, *args, **kwargs)
+        log_timed_event(
+            logger,
+            "levels_list_served",
+            request,
+            started_at,
+            game_type=request.query_params.get("game_type"),
+            difficulty=request.query_params.get("difficulty"),
+            result_count=len(response.data),
+        )
+        return response
 
     def get_queryset(self):
         queryset = Level.objects.filter(is_active=True)
@@ -79,9 +95,22 @@ class LevelDetailView(generics.RetrieveAPIView):
     queryset = Level.objects.filter(is_active=True)
     permission_classes = [permissions.AllowAny]
 
+    def retrieve(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().retrieve(request, *args, **kwargs)
+        log_timed_event(
+            logger,
+            "level_detail_served",
+            request,
+            started_at,
+            level_id=str(kwargs.get("pk")),
+        )
+        return response
+
 
 class StartLevelView(APIView):
     def post(self, request, level_id):
+        started_at = perf_counter()
         level = generics.get_object_or_404(Level, id=level_id, is_active=True)
         session_id, ttl = create_game_session(str(request.user.id), str(level.id))
         logger.info(
@@ -92,6 +121,14 @@ class StartLevelView(APIView):
                 "level_id": str(level.id),
                 "session_id": session_id,
             },
+        )
+        log_timed_event(
+            logger,
+            "level_start_completed",
+            request,
+            started_at,
+            level_id=str(level.id),
+            session_id=session_id,
         )
         return Response({"session_id": session_id, "expires_in": ttl}, status=status.HTTP_201_CREATED)
 
@@ -128,6 +165,7 @@ class HintView(APIView):
     throttle_scope = "submissions"
 
     def post(self, request, level_id):
+        started_at = perf_counter()
         serializer = HintRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -157,6 +195,15 @@ class HintView(APIView):
                 "hints_used": hints_used_total,
             },
         )
+        log_timed_event(
+            logger,
+            "hint_completed",
+            request,
+            started_at,
+            level_id=str(level.id),
+            session_id=serializer.validated_data["session_id"],
+            hints_used=hints_used_total,
+        )
         return Response(
             {
                 "message": hint["message"],
@@ -173,6 +220,7 @@ class SubmissionCreateView(APIView):
     throttle_scope = "submissions"
 
     def post(self, request):
+        started_at = perf_counter()
         serializer = SubmissionCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -270,6 +318,16 @@ class SubmissionCreateView(APIView):
                 "hints_used": effective_hints_used,
             },
         )
+        log_timed_event(
+            logger,
+            "submission_completed",
+            request,
+            started_at,
+            level_id=str(level.id),
+            session_id=serializer.validated_data["session_id"],
+            submission_id=str(submission.id),
+            score=score,
+        )
 
         return Response(
             {
@@ -295,6 +353,20 @@ class SubmissionCreateView(APIView):
 class MySubmissionsView(generics.ListAPIView):
     serializer_class = SubmissionSerializer
 
+    def list(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().list(request, *args, **kwargs)
+        log_timed_event(
+            logger,
+            "submissions_list_served",
+            request,
+            started_at,
+            level_id=request.query_params.get("level_id"),
+            best_only=request.query_params.get("best") == "true",
+            result_count=len(response.data),
+        )
+        return response
+
     def get_queryset(self):
         queryset = Submission.objects.filter(user=self.request.user).select_related("level")
         level_id = self.request.query_params.get("level_id")
@@ -316,6 +388,18 @@ class MySubmissionsView(generics.ListAPIView):
 
 class SubmissionReplayView(generics.RetrieveAPIView):
     serializer_class = ReplaySerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().retrieve(request, *args, **kwargs)
+        log_timed_event(
+            logger,
+            "submission_replay_served",
+            request,
+            started_at,
+            submission_id=str(kwargs.get("pk")),
+        )
+        return response
 
     def get_queryset(self):
         queryset = Submission.objects.select_related("level")

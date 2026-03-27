@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import secrets
+from time import perf_counter
 from urllib import parse as urllib_parse
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
@@ -21,6 +22,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from common.observability import log_timed_event
 from users.models import User
 from users.serializers import (
     EmailVerificationConfirmSerializer,
@@ -182,6 +184,7 @@ class RegisterView(generics.CreateAPIView):
     throttle_scope = "auth"
 
     def create(self, request, *args, **kwargs):
+        started_at = perf_counter()
         response = super().create(request, *args, **kwargs)
         user = User.objects.get(email=response.data["email"])
         refresh = RefreshToken.for_user(user)
@@ -205,6 +208,13 @@ class RegisterView(generics.CreateAPIView):
 
         response_payload = Response(payload, status=status.HTTP_201_CREATED)
         _set_refresh_cookie(response_payload, str(refresh))
+        log_timed_event(
+            logger,
+            "register_completed",
+            request,
+            started_at,
+            created_user_id=str(user.id),
+        )
         return _ensure_csrf_cookie(request, response_payload)
 
 
@@ -213,6 +223,7 @@ class LoginView(TokenObtainPairView):
     throttle_scope = "auth"
 
     def post(self, request, *args, **kwargs):
+        started_at = perf_counter()
         email = (request.data.get("email") or "").strip().lower()
         ip_address = _client_ip(request)
         failure_key = _login_failure_key(email=email, ip_address=ip_address)
@@ -274,6 +285,14 @@ class LoginView(TokenObtainPairView):
                 "ip_address": ip_address,
             },
         )
+        log_timed_event(
+            logger,
+            "login_completed",
+            request,
+            started_at,
+            email=email,
+            status_code=response.status_code,
+        )
         return _ensure_csrf_cookie(request, response_payload)
 
 
@@ -282,6 +301,7 @@ class RefreshView(APIView):
     throttle_scope = "auth"
 
     def post(self, request):
+        started_at = perf_counter()
         body_refresh_token = request.data.get("refresh")
         cookie_refresh_token = request.COOKIES.get("refresh_token")
         refresh_token = body_refresh_token or cookie_refresh_token
@@ -303,6 +323,13 @@ class RefreshView(APIView):
                 "cookie_auth": bool(cookie_refresh_token and not body_refresh_token),
             },
         )
+        log_timed_event(
+            logger,
+            "token_refresh_completed",
+            request,
+            started_at,
+            cookie_auth=bool(cookie_refresh_token and not body_refresh_token),
+        )
         return _ensure_csrf_cookie(request, response)
 
 
@@ -311,6 +338,7 @@ class LogoutView(APIView):
     throttle_scope = "auth"
 
     def post(self, request):
+        started_at = perf_counter()
         body_refresh_token = request.data.get("refresh")
         cookie_refresh_token = request.COOKIES.get("refresh_token")
         refresh_token = body_refresh_token or cookie_refresh_token
@@ -332,6 +360,12 @@ class LogoutView(APIView):
         )
         response = Response(status=status.HTTP_204_NO_CONTENT)
         response.delete_cookie("refresh_token", path="/api/v1/auth")
+        log_timed_event(
+            logger,
+            "logout_completed",
+            request,
+            started_at,
+        )
         return response
 
 
@@ -386,6 +420,18 @@ class EmailVerificationConfirmView(APIView):
 class MeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserMeSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().retrieve(request, *args, **kwargs)
+        log_timed_event(logger, "profile_read_completed", request, started_at)
+        return response
+
+    def partial_update(self, request, *args, **kwargs):
+        started_at = perf_counter()
+        response = super().partial_update(request, *args, **kwargs)
+        log_timed_event(logger, "profile_update_completed", request, started_at)
+        return response
+
     def get_object(self):
         return self.request.user
 
@@ -412,6 +458,7 @@ class GoogleAuthView(APIView):
     throttle_scope = "auth"
 
     def post(self, request):
+        started_at = perf_counter()
         serializer = GoogleAuthSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -432,5 +479,12 @@ class GoogleAuthView(APIView):
                 "request_id": getattr(request, "request_id", None),
                 "user_id": str(user.id),
             },
+        )
+        log_timed_event(
+            logger,
+            "google_auth_completed",
+            request,
+            started_at,
+            created_user_id=str(user.id),
         )
         return _ensure_csrf_cookie(request, response)

@@ -15,3 +15,4 @@ COPY apps/api/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . /app
+RUN chmod +x /app/apps/api/bin/start-api.sh /app/apps/api/bin/start-worker.sh
