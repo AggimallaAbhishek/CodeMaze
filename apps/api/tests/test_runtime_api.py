@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import pytest
 from redis.exceptions import RedisError
 
 
+@pytest.mark.django_db
 def test_healthz_returns_ok(client):
     response = client.get("/api/v1/healthz")
 
@@ -11,6 +13,7 @@ def test_healthz_returns_ok(client):
     assert response.data["service"] == "api"
 
 
+@pytest.mark.django_db
 def test_readyz_returns_ready_when_dependencies_pass(client, monkeypatch):
     class HealthyRedis:
         def ping(self):
@@ -26,6 +29,7 @@ def test_readyz_returns_ready_when_dependencies_pass(client, monkeypatch):
     assert response.data["checks"]["redis"]["ok"] is True
 
 
+@pytest.mark.django_db
 def test_readyz_returns_service_unavailable_when_redis_fails(client, monkeypatch):
     class BrokenRedis:
         def ping(self):

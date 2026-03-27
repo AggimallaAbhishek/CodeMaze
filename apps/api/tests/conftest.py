@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
+from redis.exceptions import RedisError
 
+from game.services import get_redis_client as get_game_redis_client
+from leaderboard.services import get_redis_client as get_leaderboard_redis_client
 from users.models import User
 
 
@@ -27,3 +30,18 @@ def auth_tokens(user):
         "access": str(refresh.access_token),
         "refresh": str(refresh),
     }
+
+
+@pytest.fixture(autouse=True)
+def clear_redis_state():
+    for factory in (get_game_redis_client, get_leaderboard_redis_client):
+        try:
+            factory().flushdb()
+        except (AttributeError, RedisError):
+            continue
+    yield
+    for factory in (get_game_redis_client, get_leaderboard_redis_client):
+        try:
+            factory().flushdb()
+        except (AttributeError, RedisError):
+            continue

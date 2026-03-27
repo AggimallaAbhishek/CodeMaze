@@ -16,7 +16,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 3. API: `http://localhost:8000/api/v1`
 4. Web: `http://localhost:5173`
 
-## MVP Features (Phase 0 + 5)
+## Product Scope (Phase 0 + 7)
 
 - Auth-required sorting gameplay:
   - register/login/logout with JWT and refresh token cookie
@@ -67,6 +67,16 @@ Monorepo for the Algorithm Puzzle Game platform.
   - server-tracked hint penalties on the submission pipeline
   - profile/history UI and replay comparison route
   - leaderboard scope switching and authenticated rank display
+- Phase 6 UX/accessibility/performance hardening implemented:
+  - actionable empty/error states across home, levels, leaderboard, profile, and replay
+  - keyboard-operable sorting, pathfinding, and graph traversal flows
+  - mobile Playwright coverage for auth plus all three gameplay modes
+  - bundle reporting on frontend builds and Lighthouse CI configuration
+- Phase 7 production release scaffold implemented:
+  - health/readiness endpoints and production Django runtime scripts
+  - Terraform scaffold for AWS networking, compute, data, CDN, DNS, and alerting
+  - staged and production GitHub Actions deploy workflows
+  - smoke, load, rollback, and release checklist artifacts under `infra/`
 
 ## Security Baseline
 
@@ -79,7 +89,7 @@ Monorepo for the Algorithm Puzzle Game platform.
 
 - `workers/engine`: unit tests for sorting/pathfinding/graphs/validator.
 - `apps/api`: API/service tests.
-- `apps/web`: Vitest unit tests + Playwright E2E flows.
+- `apps/web`: Vitest unit tests + Playwright desktop/mobile E2E flows.
 
 ## Useful Commands
 
@@ -87,6 +97,9 @@ Monorepo for the Algorithm Puzzle Game platform.
 - `make api-test`: run backend tests.
 - `make web-test`: run frontend unit tests.
 - `make web-e2e`: run Playwright browser automation tests.
+- `make web-e2e-mobile`: run the mobile Playwright project only.
+- `make terraform-validate`: run Terraform fmt/init/validate locally.
+- `make smoke`: execute the deployment smoke script against configured env URLs.
 
 ## Google Auth Env
 
@@ -96,3 +109,21 @@ Set these in `.env` before using Google sign-in:
 - `VITE_GOOGLE_CLIENT_ID`: used by React Google Sign-In UI.
 
 For local development, both values should be the same Google OAuth Web Client ID.
+
+## Production Runtime
+
+- API production settings module: `puzzle_api.settings_production`
+- Staging settings module: `puzzle_api.settings_staging`
+- API start command: `apps/api/bin/start-api.sh`
+- Worker start command: `apps/api/bin/start-worker.sh`
+- Health endpoints:
+  - `/api/v1/healthz`
+  - `/api/v1/readyz`
+
+## AWS Release Assets
+
+- Terraform root: [`infra/terraform`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/terraform)
+- Smoke test: [`infra/scripts/smoke.py`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/scripts/smoke.py)
+- Load probe: [`infra/load/k6-smoke.js`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/load/k6-smoke.js)
+- Rollback runbook: [`infra/release/rollback-runbook.md`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/release/rollback-runbook.md)
+- Release checklist: [`infra/release/release-checklist.md`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/release/release-checklist.md)
