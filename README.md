@@ -122,8 +122,8 @@ For local development, both values should be the same Google OAuth Web Client ID
 
 ## AWS Release Assets
 
-- Terraform root: [`infra/terraform`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/terraform)
-- Smoke test: [`infra/scripts/smoke.py`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/scripts/smoke.py)
-- Load probe: [`infra/load/k6-smoke.js`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/load/k6-smoke.js)
-- Rollback runbook: [`infra/release/rollback-runbook.md`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/release/rollback-runbook.md)
-- Release checklist: [`infra/release/release-checklist.md`](/Users/aggimallaabhishek/Documents/CodeMaze/infra/release/release-checklist.md)
+- Terraform root: `infra/terraform`
+- Smoke test: `infra/scripts/smoke.py`
+- Load probe: `infra/load/k6-smoke.js`
+- Rollback runbook: `infra/release/rollback-runbook.md`
+- Release checklist: `infra/release/release-checklist.md`
