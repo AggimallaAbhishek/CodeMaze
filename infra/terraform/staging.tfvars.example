@@ -1,0 +1,43 @@
+# Copy to staging.tfvars and replace placeholder values.
+
+environment   = "staging"
+project_name  = "codemaze"
+aws_region    = "ap-south-1"
+root_domain   = "example.com"
+route53_zone_id = "Z0123456789ABCDEF"
+
+# Staging subdomains become:
+# - API: api.example.com
+# - Web: app.example.com
+api_subdomain = "api"
+web_subdomain = "app"
+
+alert_email = "alerts@example.com"
+
+vpc_cidr             = "10.40.0.0/16"
+public_subnet_cidrs  = ["10.40.0.0/24", "10.40.1.0/24"]
+private_subnet_cidrs = ["10.40.10.0/24", "10.40.11.0/24"]
+
+# For the first bootstrap-only targeted apply, these can stay as placeholders.
+# The GitHub staging workflow replaces them with the real image tags later.
+api_image    = "public.ecr.aws/docker/library/python:3.12-slim"
+worker_image = "public.ecr.aws/docker/library/python:3.12-slim"
+
+api_cpu           = 512
+api_memory        = 1024
+worker_cpu        = 512
+worker_memory     = 1024
+api_desired_count = 2
+worker_desired_count = 1
+
+db_name               = "algorithm_puzzle"
+db_username           = "algorithm_puzzle"
+db_password           = "replace-with-staging-db-password"
+db_instance_class     = "db.t4g.micro"
+db_allocated_storage  = 20
+redis_node_type       = "cache.t4g.micro"
+
+django_secret_key         = "replace-with-staging-django-secret-key"
+google_oauth_client_id    = "replace-with-staging-or-shared-google-client-id.apps.googleusercontent.com"
+access_token_lifetime_minutes = 15
+refresh_token_lifetime_days   = 7

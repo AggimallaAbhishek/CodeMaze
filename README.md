@@ -123,7 +123,10 @@ For local development, both values should be the same Google OAuth Web Client ID
 ## AWS Release Assets
 
 - Terraform root: `infra/terraform`
+- Staging variables example: `infra/terraform/staging.tfvars.example`
+- Production variables example: `infra/terraform/production.tfvars.example`
 - Smoke test: `infra/scripts/smoke.py`
 - Load probe: `infra/load/k6-smoke.js`
+- Deployment setup guide: `infra/release/deployment-setup.md`
 - Rollback runbook: `infra/release/rollback-runbook.md`
 - Release checklist: `infra/release/release-checklist.md`
