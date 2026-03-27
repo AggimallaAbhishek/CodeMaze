@@ -32,5 +32,6 @@ describe("ResultOverlay", () => {
     expect(screen.getByText("First Clear")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Review Replay" })).toHaveAttribute("href", "/replay/submission-1");
     expect(screen.getByText("Hint Penalty")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Round Result" })).toHaveFocus();
   });
 });

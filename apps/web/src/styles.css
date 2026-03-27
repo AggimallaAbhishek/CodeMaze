@@ -1129,6 +1129,7 @@ select {
 
 .page-feedback.error {
   color: #ffd3d3;
+  text-shadow: 0 0 14px rgba(255, 144, 144, 0.16);
 }
 
 h1,
@@ -1668,6 +1669,11 @@ select {
   border: 1px solid rgba(156, 223, 241, 0.25);
   border-radius: 12px;
   padding: 14px;
+}
+
+.result-panel:focus-visible {
+  outline: 2px solid rgba(122, 199, 255, 0.88);
+  outline-offset: 4px;
 }
 
 .result-grid {
@@ -2791,6 +2797,33 @@ tr:nth-child(even) td {
 
 .error-text {
   color: var(--danger);
+}
+
+.empty-state-card {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(122, 199, 255, 0.18);
+  background:
+    linear-gradient(135deg, rgba(13, 25, 49, 0.96), rgba(8, 18, 36, 0.92)),
+    radial-gradient(circle at top right, rgba(62, 196, 255, 0.18), transparent 58%);
+  box-shadow: 0 18px 38px rgba(3, 9, 24, 0.28);
+}
+
+.empty-state-card.compact {
+  margin-top: 0;
+  padding: 18px;
+}
+
+.empty-state-card h2,
+.empty-state-card h3,
+.empty-state-card p {
+  margin: 0;
+}
+
+.empty-state-card p {
+  margin-top: 8px;
+  color: var(--muted);
 }
 
 .sr-only {

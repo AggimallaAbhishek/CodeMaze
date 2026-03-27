@@ -26,6 +26,6 @@ describe("PathfindingGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cell 2,1" }));
     expect(onSelectCell).toHaveBeenCalledWith([1, 0]);
 
-    expect(screen.getByRole("button", { name: "Cell 1,2 blocked" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cell 1,2, blocked" })).toBeDisabled();
   });
 });

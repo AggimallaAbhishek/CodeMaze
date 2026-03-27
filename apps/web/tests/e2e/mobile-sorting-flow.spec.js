@@ -10,7 +10,7 @@ test.use({
   isMobile: true
 });
 
-test("sorting controls remain usable on a mobile viewport", async ({ page }) => {
+test("@mobile sorting controls remain usable on a mobile viewport", async ({ page }) => {
   const authSession = await mockAuthSession(page);
   const user = {
     id: "user-mobile-1",
