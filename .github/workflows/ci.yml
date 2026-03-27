@@ -59,7 +59,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd apps/web
-          npm install
+          npm ci
 
       - name: Lint frontend
         run: |
@@ -71,15 +71,38 @@ jobs:
           cd apps/web
           npm run test -- --run
 
+      - name: Build frontend and emit bundle report
+        run: |
+          cd apps/web
+          npm run build:report
+
+      - name: Upload bundle report
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-bundle-report
+          path: apps/web/dist/bundle-report.json
+
       - name: Install Playwright Browser
         run: |
           cd apps/web
           npx playwright install --with-deps chromium
 
-      - name: Run Playwright E2E tests
+      - name: Run Playwright desktop E2E tests
         run: |
           cd apps/web
-          npm run test:e2e
+          npm run test:e2e:desktop
+
+      - name: Run Playwright mobile E2E tests
+        run: |
+          cd apps/web
+          npm run test:e2e:mobile
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          configPath: apps/web/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
 
       - name: Security audit
         run: |

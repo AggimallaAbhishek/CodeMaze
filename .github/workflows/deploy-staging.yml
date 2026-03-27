@@ -1,0 +1,133 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: ap-south-1
+      TF_WORKING_DIR: infra/terraform
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME_STAGING }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push API image
+        run: |
+          API_IMAGE="${{ steps.ecr.outputs.registry }}/${{ secrets.API_ECR_REPOSITORY }}:${IMAGE_TAG}"
+          docker build -f apps/api/Dockerfile -t "${API_IMAGE}" .
+          docker push "${API_IMAGE}"
+          echo "TF_VAR_api_image=${API_IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Build and Push Worker image
+        run: |
+          WORKER_IMAGE="${{ steps.ecr.outputs.registry }}/${{ secrets.WORKER_ECR_REPOSITORY }}:${IMAGE_TAG}"
+          docker build -f apps/api/Dockerfile -t "${WORKER_IMAGE}" .
+          docker push "${WORKER_IMAGE}"
+          echo "TF_VAR_worker_image=${WORKER_IMAGE}" >> "$GITHUB_ENV"
+
+      - name: Export Terraform variables
+        run: |
+          echo "TF_VAR_environment=staging" >> "$GITHUB_ENV"
+          echo "TF_VAR_root_domain=${{ secrets.ROOT_DOMAIN }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_route53_zone_id=${{ secrets.ROUTE53_ZONE_ID }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_alert_email=${{ secrets.ALERT_EMAIL }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_db_password=${{ secrets.DB_PASSWORD_STAGING }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_django_secret_key=${{ secrets.DJANGO_SECRET_KEY_STAGING }}" >> "$GITHUB_ENV"
+          echo "TF_VAR_google_oauth_client_id=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}" >> "$GITHUB_ENV"
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=codemaze/staging/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_STATE_LOCK_TABLE }}"
+
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve
+
+      - name: Capture Terraform outputs
+        id: tf
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "web_bucket_name=$(terraform output -raw web_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "cloudfront_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "api_base_url=$(terraform output -raw api_base_url)" >> "$GITHUB_OUTPUT"
+          echo "web_base_url=$(terraform output -raw web_base_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Install frontend dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build web app
+        working-directory: apps/web
+        env:
+          VITE_API_BASE_URL: ${{ steps.tf.outputs.api_base_url }}/api/v1
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+        run: npm run build
+
+      - name: Upload web bundle to S3
+        run: aws s3 sync apps/web/dist "s3://${{ steps.tf.outputs.web_bucket_name }}" --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.tf.outputs.cloudfront_distribution_id }}" \
+            --paths "/*"
+
+      - name: Run smoke checks
+        env:
+          API_BASE_URL: ${{ steps.tf.outputs.api_base_url }}/api/v1
+          WEB_BASE_URL: ${{ steps.tf.outputs.web_base_url }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_USERNAME: ${{ secrets.SMOKE_USERNAME }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+        run: python3 infra/scripts/smoke.py
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run staging load probe
+        env:
+          API_BASE_URL: ${{ steps.tf.outputs.api_base_url }}/api/v1
+        run: k6 run infra/load/k6-smoke.js
+
+      - name: Run baseline DAST
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ steps.tf.outputs.web_base_url }}

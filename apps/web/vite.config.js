@@ -54,11 +54,8 @@ export default defineConfig({
           if (!id.includes("node_modules")) {
             return undefined;
           }
-          if (id.includes("konva")) {
+          if (id.includes("react-konva") || id.includes("konva")) {
             return "canvas-vendor";
-          }
-          if (id.includes("/react/") || id.includes("react-dom")) {
-            return "react-vendor";
           }
           return "vendor";
         }
