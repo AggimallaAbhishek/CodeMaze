@@ -217,7 +217,7 @@ resource "aws_db_instance" "postgres" {
   publicly_accessible     = false
   storage_encrypted       = true
   deletion_protection     = var.environment == "production"
-  backup_retention_period = var.environment == "production" ? 14 : 3
+  backup_retention_period = local.db_backup_retention_period
   skip_final_snapshot     = var.environment != "production"
   db_subnet_group_name    = aws_db_subnet_group.main.name
   vpc_security_group_ids  = [aws_security_group.db.id]
@@ -322,11 +322,11 @@ resource "aws_secretsmanager_secret" "app" {
 resource "aws_secretsmanager_secret_version" "app" {
   secret_id = aws_secretsmanager_secret.app.id
   secret_string = jsonencode({
-    SECRET_KEY                = var.django_secret_key
-    POSTGRES_PASSWORD         = var.db_password
-    GOOGLE_OAUTH_CLIENT_ID    = var.google_oauth_client_id
+    SECRET_KEY                    = var.django_secret_key
+    POSTGRES_PASSWORD             = var.db_password
+    GOOGLE_OAUTH_CLIENT_ID        = var.google_oauth_client_id
     ACCESS_TOKEN_LIFETIME_MINUTES = tostring(var.access_token_lifetime_minutes)
-    REFRESH_TOKEN_LIFETIME_DAYS    = tostring(var.refresh_token_lifetime_days)
+    REFRESH_TOKEN_LIFETIME_DAYS   = tostring(var.refresh_token_lifetime_days)
   })
 }
 
@@ -827,13 +827,13 @@ resource "aws_cloudwatch_dashboard" "platform" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type = "metric"
-        x    = 0
-        y    = 0
-        width = 12
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
         height = 6
         properties = {
-          title = "API Load Balancer"
+          title  = "API Load Balancer"
           region = var.aws_region
           metrics = [
             ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.api.arn_suffix],
@@ -843,13 +843,13 @@ resource "aws_cloudwatch_dashboard" "platform" {
         }
       },
       {
-        type = "metric"
-        x    = 12
-        y    = 0
-        width = 12
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
         height = 6
         properties = {
-          title = "ECS and Worker Capacity"
+          title  = "ECS and Worker Capacity"
           region = var.aws_region
           metrics = [
             ["AWS/ECS", "CPUUtilization", "ClusterName", aws_ecs_cluster.main.name, "ServiceName", aws_ecs_service.api.name],
@@ -859,13 +859,13 @@ resource "aws_cloudwatch_dashboard" "platform" {
         }
       },
       {
-        type = "metric"
-        x    = 0
-        y    = 6
-        width = 12
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
         height = 6
         properties = {
-          title = "Database and Redis"
+          title  = "Database and Redis"
           region = var.aws_region
           metrics = [
             ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_db_instance.postgres.id],

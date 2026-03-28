@@ -7,10 +7,10 @@ root_domain   = "example.com"
 route53_zone_id = "Z0123456789ABCDEF"
 
 # Staging subdomains become:
-# - API: api.example.com
-# - Web: app.example.com
-api_subdomain = "api"
-web_subdomain = "app"
+# - API: staging-api.example.com
+# - Web: staging-app.example.com
+api_subdomain = "staging-api"
+web_subdomain = "staging-app"
 
 alert_email = "alerts@example.com"
 
@@ -35,6 +35,7 @@ db_username           = "algorithm_puzzle"
 db_password           = "replace-with-staging-db-password"
 db_instance_class     = "db.t4g.micro"
 db_allocated_storage  = 20
+db_backup_retention_period = 1
 redis_node_type       = "cache.t4g.micro"
 
 django_secret_key         = "replace-with-staging-django-secret-key"

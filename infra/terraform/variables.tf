@@ -143,6 +143,12 @@ variable "db_allocated_storage" {
   default     = 20
 }
 
+variable "db_backup_retention_period" {
+  description = "RDS automated backup retention period in days."
+  type        = number
+  default     = null
+}
+
 variable "redis_node_type" {
   description = "ElastiCache node type."
   type        = string

@@ -35,6 +35,7 @@ db_username           = "algorithm_puzzle"
 db_password           = "replace-with-production-db-password"
 db_instance_class     = "db.t4g.small"
 db_allocated_storage  = 40
+db_backup_retention_period = 14
 redis_node_type       = "cache.t4g.small"
 
 django_secret_key            = "replace-with-production-django-secret-key"

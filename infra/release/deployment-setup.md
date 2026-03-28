@@ -35,6 +35,7 @@ There are four external setup areas you still own:
    - `infra/terraform/production.tfvars.example` -> `infra/terraform/production.tfvars`
 2. Replace every placeholder value.
 3. Keep `api_image` and `worker_image` as placeholders only for the initial ECR bootstrap step.
+4. For free-tier-eligible staging RDS shapes, keep `db_backup_retention_period = 1` unless you intentionally need a higher-cost configuration.
 
 ## Step 2: Create Terraform Remote State
 
