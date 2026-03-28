@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   applyDocumentTheme,
+  isValidTheme,
   persistTheme,
   resolveInitialTheme,
   THEME_DARK,
@@ -20,6 +21,12 @@ function createWindowLike({ storedTheme, prefersDark = false } = {}) {
 }
 
 describe("theme utilities", () => {
+  it("accepts only the supported theme values", () => {
+    expect(isValidTheme(THEME_DARK)).toBe(true);
+    expect(isValidTheme(THEME_LIGHT)).toBe(true);
+    expect(isValidTheme("sepia")).toBe(false);
+  });
+
   it("prefers stored theme when present", () => {
     const windowLike = createWindowLike({ storedTheme: THEME_LIGHT, prefersDark: true });
     expect(resolveInitialTheme(windowLike)).toBe(THEME_LIGHT);
@@ -31,6 +38,10 @@ describe("theme utilities", () => {
 
     expect(resolveInitialTheme(darkWindow)).toBe(THEME_DARK);
     expect(resolveInitialTheme(lightWindow)).toBe(THEME_LIGHT);
+  });
+
+  it("defaults to dark when no browser context is available", () => {
+    expect(resolveInitialTheme(null)).toBe(THEME_DARK);
   });
 
   it("applies theme to the document root and persists it", () => {
@@ -48,5 +59,21 @@ describe("theme utilities", () => {
     expect(documentLike.documentElement.dataset.theme).toBe(THEME_LIGHT);
     expect(documentLike.documentElement.style.colorScheme).toBe(THEME_LIGHT);
     expect(windowLike.localStorage.setItem).toHaveBeenCalledWith(THEME_STORAGE_KEY, THEME_LIGHT);
+  });
+
+  it("ignores invalid themes when applying or persisting", () => {
+    const documentLike = {
+      documentElement: {
+        dataset: {},
+        style: {}
+      }
+    };
+    const windowLike = createWindowLike();
+
+    applyDocumentTheme("sepia", documentLike);
+    persistTheme("sepia", windowLike);
+
+    expect(documentLike.documentElement.dataset.theme).toBeUndefined();
+    expect(windowLike.localStorage.setItem).not.toHaveBeenCalled();
   });
 });
