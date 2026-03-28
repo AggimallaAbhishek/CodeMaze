@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class HealthCheckView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         return Response(
@@ -36,6 +37,7 @@ class HealthCheckView(APIView):
 class ReadinessView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
+    throttle_classes = []
 
     def get(self, request):
         started_at = perf_counter()
