@@ -14,10 +14,14 @@ export default function ModeCard({
   actionLabel,
   to,
   stats = [],
-  icon
+  icon,
+  className = "",
+  footerMeta = ""
 }) {
+  const articleClassName = ["mode-card", `mode-card-${accent}`, className].filter(Boolean).join(" ");
+
   return (
-    <article className={`mode-card mode-card-${accent}`}>
+    <article className={articleClassName}>
       <div className="mode-card-top">
         <div className="mode-icon" aria-hidden="true">
           {icon ?? accentIcon[accent] ?? "⚙️"}
@@ -36,6 +40,7 @@ export default function ModeCard({
         ))}
       </div>
       <div className="mode-card-footer">
+        {footerMeta ? <span className="mode-footer-copy">{footerMeta}</span> : <span />}
         <Link className="btn-play" to={to}>
           {actionLabel}
         </Link>
