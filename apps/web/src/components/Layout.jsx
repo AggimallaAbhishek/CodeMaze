@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
+import useThemePreference from "../hooks/useThemePreference";
 import { logoutUser } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 
@@ -15,17 +16,7 @@ export default function Layout({ children }) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const clearAuthSession = useAuthStore((state) => state.clearAuthSession);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "dark";
-    }
-    return window.localStorage.getItem("codemaze-theme") ?? "dark";
-  });
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem("codemaze-theme", theme);
-  }, [theme]);
+  const { theme, isDarkTheme, toggleTheme } = useThemePreference();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -40,6 +31,11 @@ export default function Layout({ children }) {
       clearAuthSession();
       navigate("/login", { replace: true });
     }
+  }
+
+  function handleToggleTheme() {
+    console.debug("theme_toggle_clicked", { nextTheme: isDarkTheme ? "light" : "dark" });
+    toggleTheme();
   }
 
   return (
@@ -70,53 +66,73 @@ export default function Layout({ children }) {
             ) : null}
           </nav>
 
-          <div className="account-cluster" aria-label="Account controls">
+          <div className="nav-utility-row">
             <button
               type="button"
               className="theme-toggle"
-              onClick={() => setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"))}
-              aria-label="Toggle theme"
+              onClick={handleToggleTheme}
+              aria-label={isDarkTheme ? "Switch to light mode" : "Switch to dark mode"}
+              aria-pressed={!isDarkTheme}
+              title={isDarkTheme ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              <span className="theme-toggle-track">
+                <span className="theme-toggle-thumb" aria-hidden="true">
+                  {isDarkTheme ? "☾" : "☀"}
+                </span>
+                <span className="theme-toggle-copy">{theme === "dark" ? "Dark" : "Light"}</span>
+              </span>
             </button>
+
+            <div className="account-cluster" aria-label="Account controls">
+              {user ? (
+                <>
+                  <span className="pill">{user.username}</span>
+                  <span className="pill subtle">XP {user.total_xp ?? 0}</span>
+                  <Link className="primary-btn nav-cta-btn" to="/levels">
+                    Play Now
+                  </Link>
+                  <button className="ghost-btn" onClick={handleLogout} type="button">
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link className="ghost-btn" to="/login">
+                    Login
+                  </Link>
+                  <Link className="primary-btn nav-cta-btn" to="/register">
+                    Get Started
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <button
+              className={menuOpen ? "nav-toggle open" : "nav-toggle"}
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              aria-label="Toggle navigation"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+
+        <div id="mobile-nav" className={menuOpen ? "mobile-nav open" : "mobile-nav"}>
+          <div className="mobile-nav-meta">
             {user ? (
               <>
                 <span className="pill">{user.username}</span>
                 <span className="pill subtle">XP {user.total_xp ?? 0}</span>
-                <Link className="primary-btn nav-cta-btn" to="/levels">
-                  Play Now
-                </Link>
-                <button className="ghost-btn" onClick={handleLogout} type="button">
-                  Logout
-                </button>
               </>
             ) : (
-              <>
-                <Link className="ghost-btn" to="/login">
-                  Login
-                </Link>
-                <Link className="primary-btn nav-cta-btn" to="/register">
-                  Get Started
-                </Link>
-              </>
+              <span className="muted-text">Train sorting, pathfinding, and graph traversal on the go.</span>
             )}
           </div>
-
-          <button
-            className={menuOpen ? "nav-toggle open" : "nav-toggle"}
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-nav"
-            aria-label="Toggle navigation"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-        </div>
-
-        <div id="mobile-nav" className={menuOpen ? "mobile-nav open" : "mobile-nav"}>
           <NavLink className={navigationLinkClass} to="/">
             Home
           </NavLink>
@@ -136,9 +152,14 @@ export default function Layout({ children }) {
               Logout
             </button>
           ) : (
-            <Link className="primary-btn nav-cta-btn" to="/register">
-              Get Started
-            </Link>
+            <>
+              <Link className="ghost-btn" to="/login">
+                Login
+              </Link>
+              <Link className="primary-btn nav-cta-btn" to="/register">
+                Get Started
+              </Link>
+            </>
           )}
         </div>
       </header>
