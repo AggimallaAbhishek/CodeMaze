@@ -137,6 +137,12 @@ variable "db_instance_class" {
   default     = "db.t4g.micro"
 }
 
+variable "db_engine_version" {
+  description = "PostgreSQL engine version."
+  type        = string
+  default     = "16.13"
+}
+
 variable "db_allocated_storage" {
   description = "RDS allocated storage in GiB."
   type        = number

@@ -36,6 +36,7 @@ There are four external setup areas you still own:
 2. Replace every placeholder value.
 3. Keep `api_image` and `worker_image` as placeholders only for the initial ECR bootstrap step.
 4. For free-tier-eligible staging RDS shapes, keep `db_backup_retention_period = 1` unless you intentionally need a higher-cost configuration.
+5. Keep `db_engine_version` on a version that is actually offered in your AWS region and instance class. The current repo default is `16.13`, which is valid in `ap-south-1` for `db.t4g.micro`.
 
 ## Step 2: Create Terraform Remote State
 
