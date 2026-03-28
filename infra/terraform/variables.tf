@@ -129,6 +129,16 @@ variable "db_password" {
   description = "PostgreSQL master password."
   type        = string
   sensitive   = true
+
+  validation {
+    condition = (
+      length(var.db_password) >= 8 &&
+      length(var.db_password) <= 128 &&
+      can(regex("^[!-~]+$", var.db_password)) &&
+      !can(regex("[/@\" ]", var.db_password))
+    )
+    error_message = "db_password must be 8-128 printable ASCII characters and cannot contain '/', '@', '\"', or spaces because AWS RDS rejects those characters for the master password."
+  }
 }
 
 variable "db_instance_class" {

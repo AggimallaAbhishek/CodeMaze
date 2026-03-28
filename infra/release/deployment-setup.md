@@ -37,6 +37,13 @@ There are four external setup areas you still own:
 3. Keep `api_image` and `worker_image` as placeholders only for the initial ECR bootstrap step.
 4. For free-tier-eligible staging RDS shapes, keep `db_backup_retention_period = 1` unless you intentionally need a higher-cost configuration.
 5. Keep `db_engine_version` on a version that is actually offered in your AWS region and instance class. The current repo default is `16.13`, which is valid in `ap-south-1` for `db.t4g.micro`.
+6. Generate `db_password` values with an RDS-safe character set. A simple safe option is:
+
+```bash
+openssl rand -hex 24
+```
+
+Do not use passwords containing `/`, `@`, `"`, or spaces for the RDS master password.
 
 ## Step 2: Create Terraform Remote State
 
