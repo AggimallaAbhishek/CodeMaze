@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -13,6 +14,9 @@ WEB_BASE_URL = os.getenv("WEB_BASE_URL", "").rstrip("/")
 SMOKE_EMAIL = os.getenv("SMOKE_EMAIL", "smoke-bot@example.com")
 SMOKE_USERNAME = os.getenv("SMOKE_USERNAME", "smokebot")
 SMOKE_PASSWORD = os.getenv("SMOKE_PASSWORD", "StrongPass123!")
+SMOKE_RETRY_ATTEMPTS = int(os.getenv("SMOKE_RETRY_ATTEMPTS", "18"))
+SMOKE_RETRY_DELAY_SECONDS = float(os.getenv("SMOKE_RETRY_DELAY_SECONDS", "10"))
+SMOKE_RESPONSE_PREVIEW_CHARS = int(os.getenv("SMOKE_RESPONSE_PREVIEW_CHARS", "240"))
 
 
 def fail(message: str) -> None:
@@ -20,26 +24,113 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def request(path: str, *, method: str = "GET", payload: dict | None = None, token: str | None = None):
-    if not API_BASE_URL:
-        fail("API_BASE_URL is required for smoke.py")
+def log(message: str) -> None:
+    print(f"[smoke] {message}", flush=True)
 
+
+def preview_text(value: str, *, limit: int = SMOKE_RESPONSE_PREVIEW_CHARS) -> str:
+    text = value.strip()
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}..."
+
+
+def parse_response_payload(raw: str, content_type: str | None):
+    if not raw:
+        return None
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return {
+            "detail": "Response body was not valid JSON.",
+            "content_type": content_type or "",
+            "raw_body": preview_text(raw),
+            "parse_error": str(exc),
+        }
+
+
+def format_payload(payload) -> str:
+    if payload is None:
+        return "null"
+    if isinstance(payload, (dict, list)):
+        return json.dumps(payload, sort_keys=True, default=str)
+    return str(payload)
+
+
+def request_url(
+    url: str,
+    *,
+    method: str = "GET",
+    payload: dict | None = None,
+    token: str | None = None,
+    accept: str = "application/json",
+):
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": accept}
     if payload is not None:
         headers["Content-Type"] = "application/json"
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    req = urllib.request.Request(f"{API_BASE_URL}{path}", data=body, headers=headers, method=method)
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=20) as response:
-            raw = response.read().decode("utf-8")
-            return response.status, json.loads(raw) if raw else None
+            raw = response.read().decode("utf-8", errors="replace")
+            content_type = response.headers.get("Content-Type", "")
+            return response.status, parse_response_payload(raw, content_type)
     except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8")
-        payload = json.loads(raw) if raw else {}
-        return exc.code, payload
+        raw = exc.read().decode("utf-8", errors="replace")
+        content_type = exc.headers.get("Content-Type", "") if exc.headers else ""
+        parsed_payload = parse_response_payload(raw, content_type)
+        if parsed_payload is None:
+            parsed_payload = {
+                "detail": "HTTP error response with an empty body.",
+                "content_type": content_type,
+            }
+        return exc.code, parsed_payload
+    except urllib.error.URLError as exc:
+        return 0, {"detail": "Network error during request.", "reason": str(exc.reason)}
+    except TimeoutError:
+        return 0, {"detail": "Request timed out."}
+
+
+def request(path: str, *, method: str = "GET", payload: dict | None = None, token: str | None = None):
+    if not API_BASE_URL:
+        fail("API_BASE_URL is required for smoke.py")
+
+    return request_url(f"{API_BASE_URL}{path}", method=method, payload=payload, token=token)
+
+
+def wait_for_check(
+    name: str,
+    fetch,
+    *,
+    is_ready,
+    attempts: int = SMOKE_RETRY_ATTEMPTS,
+    delay_seconds: float = SMOKE_RETRY_DELAY_SECONDS,
+):
+    last_status = None
+    last_payload = None
+
+    for attempt in range(1, attempts + 1):
+        status, payload = fetch()
+        last_status = status
+        last_payload = payload
+
+        if is_ready(status, payload):
+            if attempt > 1:
+                log(f"{name} became ready on attempt {attempt}/{attempts}")
+            return status, payload
+
+        log(f"{name} attempt {attempt}/{attempts} returned status={status} payload={format_payload(payload)}")
+        if attempt < attempts:
+            time.sleep(delay_seconds)
+
+    fail(
+        f"{name} did not become ready after {attempts} attempts. "
+        f"Last status={last_status} payload={format_payload(last_payload)}"
+    )
 
 
 def selection_sort_moves(values: list[int]) -> list[dict]:
@@ -77,6 +168,7 @@ def build_sorting_moves(level: dict) -> list[dict]:
 
 
 def register_or_login() -> tuple[str, dict]:
+    log("Registering or logging in smoke user")
     status, payload = request(
         "/auth/register",
         method="POST",
@@ -87,6 +179,7 @@ def register_or_login() -> tuple[str, dict]:
         },
     )
     if status == 201 and payload:
+        log("Smoke user registered successfully")
         return payload["access"], payload["user"]
 
     status, payload = request(
@@ -97,6 +190,7 @@ def register_or_login() -> tuple[str, dict]:
     if status != 200 or not payload:
         fail(f"Unable to register/login smoke user: {status} {payload}")
 
+    log("Smoke user logged in successfully")
     access = payload["access"]
     status, user_payload = request("/users/me", token=access)
     if status != 200 or not user_payload:
@@ -105,16 +199,24 @@ def register_or_login() -> tuple[str, dict]:
 
 
 def main() -> None:
+    log("Starting staging smoke checks")
     if WEB_BASE_URL:
-        web_request = urllib.request.Request(WEB_BASE_URL, headers={"Accept": "text/html"})
-        with urllib.request.urlopen(web_request, timeout=20) as response:
-            if response.status != 200:
-                fail(f"Web smoke failed with status {response.status}")
+        wait_for_check(
+            "web",
+            lambda: request_url(WEB_BASE_URL, accept="text/html"),
+            is_ready=lambda status, _payload: status == 200,
+        )
 
-    for path in ["/healthz", "/readyz"]:
-        status, payload = request(path)
-        if status != 200:
-            fail(f"{path} failed with status {status}: {payload}")
+    wait_for_check(
+        "/healthz",
+        lambda: request("/healthz"),
+        is_ready=lambda status, payload: status == 200 and isinstance(payload, dict) and payload.get("status") == "ok",
+    )
+    wait_for_check(
+        "/readyz",
+        lambda: request("/readyz"),
+        is_ready=lambda status, payload: status == 200 and isinstance(payload, dict) and payload.get("status") == "ready",
+    )
 
     access, _user = register_or_login()
 

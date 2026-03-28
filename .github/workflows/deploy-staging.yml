@@ -123,6 +123,8 @@ jobs:
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_USERNAME: ${{ secrets.SMOKE_USERNAME }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_RETRY_ATTEMPTS: "24"
+          SMOKE_RETRY_DELAY_SECONDS: "10"
         run: python3 infra/scripts/smoke.py
 
       - name: Setup k6
