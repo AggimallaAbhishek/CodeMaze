@@ -299,8 +299,8 @@ resource "aws_iam_role" "ecs_task" {
 }
 
 resource "aws_iam_role_policy" "task_secret_read" {
-  name = "${local.name_prefix}-task-secret-read"
-  role = aws_iam_role.ecs_task.id
+  name = "${local.name_prefix}-execution-secret-read"
+  role = aws_iam_role.ecs_execution.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -452,14 +452,16 @@ resource "aws_ecs_task_definition" "api" {
       ]
       environment = [
         { name = "DEBUG", value = "false" },
-        { name = "DJANGO_SETTINGS_MODULE", value = "puzzle_api.settings_production" },
+        { name = "DJANGO_SETTINGS_MODULE", value = local.django_settings_module },
         { name = "POSTGRES_HOST", value = aws_db_instance.postgres.address },
         { name = "POSTGRES_PORT", value = tostring(aws_db_instance.postgres.port) },
         { name = "POSTGRES_DB", value = var.db_name },
         { name = "POSTGRES_USER", value = var.db_username },
         { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.port}/0" },
         { name = "ALLOWED_HOSTS", value = join(",", [local.api_domain_name]) },
-        { name = "CORS_ALLOWED_ORIGINS", value = "https://${local.web_domain_name}" }
+        { name = "CORS_ALLOWED_ORIGINS", value = "https://${local.web_domain_name}" },
+        { name = "RUN_MIGRATIONS_ON_STARTUP", value = "true" },
+        { name = "POSTGRES_READY_TIMEOUT_SECONDS", value = "240" }
       ]
       secrets = [
         { name = "SECRET_KEY", valueFrom = "${aws_secretsmanager_secret.app.arn}:SECRET_KEY::" },
@@ -499,12 +501,13 @@ resource "aws_ecs_task_definition" "worker" {
       command   = ["sh", "/app/apps/api/bin/start-worker.sh"]
       environment = [
         { name = "DEBUG", value = "false" },
-        { name = "DJANGO_SETTINGS_MODULE", value = "puzzle_api.settings_production" },
+        { name = "DJANGO_SETTINGS_MODULE", value = local.django_settings_module },
         { name = "POSTGRES_HOST", value = aws_db_instance.postgres.address },
         { name = "POSTGRES_PORT", value = tostring(aws_db_instance.postgres.port) },
         { name = "POSTGRES_DB", value = var.db_name },
         { name = "POSTGRES_USER", value = var.db_username },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.port}/0" }
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.port}/0" },
+        { name = "POSTGRES_READY_TIMEOUT_SECONDS", value = "240" }
       ]
       secrets = [
         { name = "SECRET_KEY", valueFrom = "${aws_secretsmanager_secret.app.arn}:SECRET_KEY::" },
@@ -526,12 +529,13 @@ resource "aws_ecs_task_definition" "worker" {
 }
 
 resource "aws_ecs_service" "api" {
-  name                   = "${local.name_prefix}-api"
-  cluster                = aws_ecs_cluster.main.id
-  task_definition        = aws_ecs_task_definition.api.arn
-  desired_count          = var.api_desired_count
-  launch_type            = "FARGATE"
-  enable_execute_command = true
+  name                              = "${local.name_prefix}-api"
+  cluster                           = aws_ecs_cluster.main.id
+  task_definition                   = aws_ecs_task_definition.api.arn
+  desired_count                     = var.api_desired_count
+  launch_type                       = "FARGATE"
+  enable_execute_command            = true
+  health_check_grace_period_seconds = 180
 
   deployment_circuit_breaker {
     enable   = true

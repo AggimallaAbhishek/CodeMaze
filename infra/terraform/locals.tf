@@ -4,6 +4,7 @@ locals {
   web_domain_name            = "${var.web_subdomain}.${var.root_domain}"
   web_origin_id              = "${local.name_prefix}-web-origin"
   db_backup_retention_period = coalesce(var.db_backup_retention_period, var.environment == "production" ? 14 : 1)
+  django_settings_module     = var.environment == "production" ? "puzzle_api.settings_production" : "puzzle_api.settings_staging"
   common_tags = {
     Project     = var.project_name
     Environment = var.environment
