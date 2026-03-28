@@ -11,9 +11,7 @@ fi
 
 if [ "${STARTUP_SEED_DATA:-false}" = "true" ]; then
   echo "[startup] Seeding initial level data"
-  python manage.py seed_sorting_levels
-  python manage.py seed_pathfinding_levels
-  python manage.py seed_graph_levels
+  python manage.py seed_default_levels
 fi
 
 echo "[startup] Launching Gunicorn"

@@ -461,6 +461,7 @@ resource "aws_ecs_task_definition" "api" {
         { name = "ALLOWED_HOSTS", value = join(",", [local.api_domain_name]) },
         { name = "CORS_ALLOWED_ORIGINS", value = "https://${local.web_domain_name}" },
         { name = "RUN_MIGRATIONS_ON_STARTUP", value = "true" },
+        { name = "STARTUP_SEED_DATA", value = "true" },
         { name = "POSTGRES_READY_TIMEOUT_SECONDS", value = "240" }
       ]
       secrets = [
