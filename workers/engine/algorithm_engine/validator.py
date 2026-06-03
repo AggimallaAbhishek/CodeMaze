@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from algorithm_engine.dynamic_programming import solve_dp
 from algorithm_engine.graphs import bfs_traversal, dfs_traversal
 from algorithm_engine.pathfinding import bfs_shortest_path, dijkstra_shortest_path
 from algorithm_engine.sorting import apply_swap_moves, bubble_sort, quick_sort, selection_sort
@@ -219,6 +220,67 @@ def _validate_graph(user_moves: list[dict], level_config: dict, hints_used: int,
     }
 
 
+def _validate_dp(user_moves: list[dict], level_config: dict, hints_used: int, time_elapsed: int) -> dict:
+    solution = solve_dp(level_config)
+    optimal_steps = solution["steps"]
+
+    user_cells = [
+        {"row": move["row"], "col": move["col"], "value": move["value"]}
+        for move in user_moves
+        if move.get("type") == "dp_cell"
+    ]
+
+    # Build step-by-step diff
+    max_len = max(len(user_cells), len(optimal_steps))
+    diff: list[dict] = []
+    all_correct = True
+    for index in range(max_len):
+        expected = optimal_steps[index] if index < len(optimal_steps) else None
+        received = user_cells[index] if index < len(user_cells) else None
+        correct = (
+            expected is not None
+            and received is not None
+            and expected["row"] == received["row"]
+            and expected["col"] == received["col"]
+            and expected["value"] == received["value"]
+        )
+        if not correct:
+            all_correct = False
+        diff.append(
+            {
+                "step": index + 1,
+                "correct": correct,
+                "expected": expected,
+                "received": received,
+            }
+        )
+
+    solved = all_correct and len(user_cells) == len(optimal_steps)
+
+    breakdown = _score(
+        optimal_steps=len(optimal_steps),
+        user_steps=len(user_cells),
+        hints_used=hints_used,
+        time_elapsed=time_elapsed,
+        solved=solved,
+    )
+
+    return {
+        "score": breakdown.final_score,
+        "stars": _stars_for_score(breakdown.final_score),
+        "optimal_steps": len(optimal_steps),
+        "user_steps": len(user_cells),
+        "optimal_moves": [{"type": "dp_cell", **step} for step in optimal_steps],
+        "diff": diff,
+        "solved": solved,
+        "score_breakdown": {
+            "base_score": round(breakdown.base_score, 2),
+            "time_bonus": round(breakdown.time_bonus, 2),
+            "hint_penalty": round(breakdown.hint_penalty, 2),
+        },
+    }
+
+
 def validate_submission(
     game_type: str,
     user_moves: list[dict],
@@ -232,4 +294,6 @@ def validate_submission(
         return _validate_pathfinding(user_moves, level_config, hints_used, time_elapsed)
     if game_type == "graph_traversal":
         return _validate_graph(user_moves, level_config, hints_used, time_elapsed)
+    if game_type == "dynamic_programming":
+        return _validate_dp(user_moves, level_config, hints_used, time_elapsed)
     raise ValueError(f"Unsupported game type: {game_type}")

@@ -54,6 +54,13 @@ class GraphVisitMoveSerializer(serializers.Serializer):
     node = serializers.CharField(max_length=64)
 
 
+class DpCellMoveSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=["dp_cell"])
+    row = serializers.IntegerField(min_value=0)
+    col = serializers.IntegerField(min_value=0)
+    value = serializers.IntegerField()
+
+
 def validate_moves_for_game_type(game_type: str, moves: list[dict]) -> list[dict]:
     if len(moves) > MAX_MOVES_PER_REQUEST:
         raise serializers.ValidationError({"moves": [f"Move payload exceeds the maximum of {MAX_MOVES_PER_REQUEST} events."]})
@@ -62,6 +69,7 @@ def validate_moves_for_game_type(game_type: str, moves: list[dict]) -> list[dict
         Level.GameType.SORTING: SwapMoveSerializer,
         Level.GameType.PATHFINDING: PathCellMoveSerializer,
         Level.GameType.GRAPH_TRAVERSAL: GraphVisitMoveSerializer,
+        Level.GameType.DYNAMIC_PROGRAMMING: DpCellMoveSerializer,
     }
     serializer_class = serializer_by_game_type.get(game_type)
     if not serializer_class:

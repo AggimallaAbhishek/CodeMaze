@@ -133,3 +133,49 @@ def test_validate_graph_submission_rejects_wrong_order():
 
     assert result["solved"] is False
     assert result["score"] == 0
+
+
+def test_validate_dp_submission_accepts_correct_fibonacci():
+    level_config = {
+        "problem_type": "fibonacci",
+        "n": 5,
+    }
+    # Canonical steps for fib(2..5): 1, 2, 3, 5
+    result = validate_submission(
+        game_type="dynamic_programming",
+        user_moves=[
+            {"type": "dp_cell", "row": 0, "col": 2, "value": 1},
+            {"type": "dp_cell", "row": 0, "col": 3, "value": 2},
+            {"type": "dp_cell", "row": 0, "col": 4, "value": 3},
+            {"type": "dp_cell", "row": 0, "col": 5, "value": 5},
+        ],
+        level_config=level_config,
+        hints_used=0,
+        time_elapsed=15,
+    )
+
+    assert result["solved"] is True
+    assert result["score"] > 0
+    assert result["optimal_steps"] == 4
+
+
+def test_validate_dp_submission_rejects_wrong_values():
+    level_config = {
+        "problem_type": "fibonacci",
+        "n": 4,
+    }
+    result = validate_submission(
+        game_type="dynamic_programming",
+        user_moves=[
+            {"type": "dp_cell", "row": 0, "col": 2, "value": 1},
+            {"type": "dp_cell", "row": 0, "col": 3, "value": 999},
+            {"type": "dp_cell", "row": 0, "col": 4, "value": 3},
+        ],
+        level_config=level_config,
+        hints_used=0,
+        time_elapsed=10,
+    )
+
+    assert result["solved"] is False
+    assert result["score"] == 0
+

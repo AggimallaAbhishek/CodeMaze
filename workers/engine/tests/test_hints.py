@@ -41,3 +41,14 @@ def test_generate_graph_hint_returns_next_node():
 
     assert hint["preview_move"] == {"type": "graph_visit", "node": "B"}
     assert hint["remaining_optimal_steps"] == 2
+
+
+def test_generate_dp_hint_returns_next_cell():
+    hint = generate_hint(
+        "dynamic_programming",
+        {"problem_type": "fibonacci", "n": 3},
+        [],
+    )
+
+    assert hint["preview_move"] == {"type": "dp_cell", "row": 0, "col": 2, "value": 1}
+    assert hint["remaining_optimal_steps"] == 2

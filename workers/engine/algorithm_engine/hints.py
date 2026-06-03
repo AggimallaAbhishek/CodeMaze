@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from algorithm_engine.dynamic_programming import solve_dp
 from algorithm_engine.graphs import bfs_traversal, dfs_traversal
 from algorithm_engine.pathfinding import bfs_shortest_path, dijkstra_shortest_path
 from algorithm_engine.sorting import apply_swap_moves, bubble_sort, quick_sort, selection_sort
@@ -93,6 +94,43 @@ def _graph_hint(level_config: dict, user_moves: list[dict]) -> dict:
     }
 
 
+def _dp_hint(level_config: dict, user_moves: list[dict]) -> dict:
+    solution = solve_dp(level_config)
+    optimal_steps = solution["steps"]
+    current_step_index = len([m for m in user_moves if m.get("type") == "dp_cell"])
+    next_step = optimal_steps[current_step_index] if current_step_index < len(optimal_steps) else None
+
+    if not next_step:
+        return {
+            "message": "The table is already complete — all cells match the canonical solution.",
+            "preview_move": None,
+            "remaining_optimal_steps": 0,
+        }
+
+    row, col, value = next_step["row"], next_step["col"], next_step["value"]
+    problem_type = level_config.get("problem_type", "")
+
+    if problem_type == "fibonacci":
+        msg = f"Compute cell ({row}, {col}): add the values of cell ({row}, {col - 1}) and cell ({row}, {col - 2})."
+    elif problem_type == "coin_change":
+        coins = level_config.get("coins", [])
+        usable = [c for c in coins if c <= col]
+        deps = ", ".join(f"cell ({row}, {col - c})" for c in usable)
+        msg = f"Compute cell ({row}, {col}): check the minimum across {deps}, then add 1."
+    elif problem_type == "knapsack":
+        msg = f"Compute cell ({row}, {col}): compare the value at cell ({row - 1}, {col}) with including item {row}."
+    elif problem_type == "grid_traveler":
+        msg = f"Compute cell ({row}, {col}): sum cell ({row - 1}, {col}) and cell ({row}, {col - 1})."
+    else:
+        msg = f"Fill cell ({row}, {col}) with value {value}."
+
+    return {
+        "message": msg,
+        "preview_move": {"type": "dp_cell", "row": row, "col": col, "value": value},
+        "remaining_optimal_steps": max(len(optimal_steps) - current_step_index, 0),
+    }
+
+
 def generate_hint(game_type: str, level_config: dict, user_moves: list[dict]) -> dict:
     if game_type == "sorting":
         return _sorting_hint(level_config, user_moves)
@@ -100,4 +138,6 @@ def generate_hint(game_type: str, level_config: dict, user_moves: list[dict]) ->
         return _pathfinding_hint(level_config, user_moves)
     if game_type == "graph_traversal":
         return _graph_hint(level_config, user_moves)
+    if game_type == "dynamic_programming":
+        return _dp_hint(level_config, user_moves)
     raise ValueError(f"Unsupported game type: {game_type}")

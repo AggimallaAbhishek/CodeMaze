@@ -21,6 +21,7 @@ class Level(TimeStampedModel):
         SORTING = "sorting", "Sorting"
         PATHFINDING = "pathfinding", "Pathfinding"
         GRAPH_TRAVERSAL = "graph_traversal", "Graph Traversal"
+        DYNAMIC_PROGRAMMING = "dynamic_programming", "Dynamic Programming"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)

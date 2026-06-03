@@ -34,4 +34,5 @@ class Command(BaseCommand):
             call_command("seed_sorting_levels")
             call_command("seed_pathfinding_levels")
             call_command("seed_graph_levels")
+            call_command("seed_dp_levels")
         self.stdout.write(self.style.SUCCESS("Default levels seeded."))
