@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { getCurrentUser, refreshAccessToken } from "./lib/apiClient";
 import { useAuthStore } from "./store/useAuthStore";
 
+const DynamicProgrammingPage = lazy(() => import("./pages/DynamicProgrammingPage"));
 const GraphTraversalPage = lazy(() => import("./pages/GraphTraversalPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
@@ -95,6 +96,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <GraphTraversalPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/levels/:levelId/dynamic-programming"
+            element={
+              <ProtectedRoute>
+                <DynamicProgrammingPage />
               </ProtectedRoute>
             }
           />

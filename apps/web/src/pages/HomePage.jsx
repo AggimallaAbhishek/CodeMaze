@@ -35,6 +35,9 @@ function levelRoute(level) {
   if (level.game_type === "graph_traversal") {
     return `/levels/${level.id}/graph-traversal`;
   }
+  if (level.game_type === "dynamic_programming") {
+    return `/levels/${level.id}/dynamic-programming`;
+  }
   return "/levels";
 }
 
@@ -72,6 +75,11 @@ function buildMasteryTracks(user) {
       label: "Graph Traversal",
       value: Math.min(94, 20 + base + (badgeCodes.has("graph_guru") ? 16 : 0)),
       accent: "green"
+    },
+    {
+      label: "Dynamic Programming",
+      value: Math.min(90, 16 + base + (badgeCodes.has("dp_master") ? 14 : 0)),
+      accent: "orange"
     }
   ];
 }
@@ -158,7 +166,8 @@ export default function HomePage() {
     () => ({
       sorting: firstLevelByType(levels, "sorting"),
       pathfinding: firstLevelByType(levels, "pathfinding"),
-      graph_traversal: firstLevelByType(levels, "graph_traversal")
+      graph_traversal: firstLevelByType(levels, "graph_traversal"),
+      dynamic_programming: firstLevelByType(levels, "dynamic_programming")
     }),
     [levels]
   );
@@ -203,6 +212,19 @@ export default function HomePage() {
         ],
         actionLabel: user ? "Play Graph" : "Unlock Graphs",
         to: user ? levelRoute(featuredLevels.graph_traversal) : "/register"
+      },
+      {
+        accent: "dp",
+        badge: featuredLevels.dynamic_programming ? difficultyLabel(featuredLevels.dynamic_programming.difficulty) : "Live",
+        title: "Dynamic Programming",
+        description:
+          "Fill DP tables step by step across Fibonacci, Coin Change, Knapsack, and Grid Traveler with server-validated scoring.",
+        stats: [
+          featuredLevels.dynamic_programming ? `Difficulty ${featuredLevels.dynamic_programming.difficulty}` : "Live Mode",
+          "1D • 2D Tabulation"
+        ],
+        actionLabel: user ? "Play DP" : "Unlock DP",
+        to: user ? levelRoute(featuredLevels.dynamic_programming) : "/register"
       }
     ],
     [featuredLevels, user]
@@ -210,7 +232,7 @@ export default function HomePage() {
 
   const heroStats = useMemo(
     () => [
-      { label: "Live Modes", value: 3 },
+      { label: "Live Modes", value: 4 },
       { label: "Seeded Levels", value: levels.length || 3 },
       { label: user ? "Unlocked Badges" : "Ranked Players", value: user ? user.badges?.length ?? 0 : entries.length || 5 }
     ],

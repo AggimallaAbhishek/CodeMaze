@@ -19,6 +19,9 @@ function levelRoute(level) {
   if (level.game_type === "graph_traversal") {
     return `/levels/${level.id}/graph-traversal`;
   }
+  if (level.game_type === "dynamic_programming") {
+    return `/levels/${level.id}/dynamic-programming`;
+  }
   return `/levels/${level.id}/sorting`;
 }
 

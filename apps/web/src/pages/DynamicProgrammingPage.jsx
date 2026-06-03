@@ -9,42 +9,8 @@ import ResultOverlay from "../components/ResultOverlay";
 import { getLevelById, requestLevelHint, startLevelSession, submitMoves } from "../lib/apiClient";
 import { useAuthStore } from "../store/useAuthStore";
 import { useDynamicProgrammingGameStore } from "../store/useDynamicProgrammingGameStore";
-import { buildDpMoves } from "../utils/dp";
+import { buildDpMoves, computeBaseCases } from "../utils/dp";
 import { toActionableError } from "../utils/errors";
-
-function computeBaseCases(config) {
-  const problemType = config?.problem_type ?? "";
-  const baseCases = [];
-
-  if (problemType === "fibonacci") {
-    baseCases.push({ row: 0, col: 0, value: 0 });
-    if ((config.n ?? 0) >= 1) {
-      baseCases.push({ row: 0, col: 1, value: 1 });
-    }
-  } else if (problemType === "coin_change") {
-    baseCases.push({ row: 0, col: 0, value: 0 });
-  } else if (problemType === "knapsack") {
-    const numItems = (config.weights?.length ?? 0) + 1;
-    const capacity = (config.capacity ?? 0) + 1;
-    for (let col = 0; col < capacity; col++) {
-      baseCases.push({ row: 0, col, value: 0 });
-    }
-    for (let row = 1; row < numItems; row++) {
-      baseCases.push({ row, col: 0, value: 0 });
-    }
-  } else if (problemType === "grid_traveler") {
-    const numRows = config.rows ?? 1;
-    const numCols = config.cols ?? 1;
-    for (let col = 0; col < numCols; col++) {
-      baseCases.push({ row: 0, col, value: 1 });
-    }
-    for (let row = 1; row < numRows; row++) {
-      baseCases.push({ row, col: 0, value: 1 });
-    }
-  }
-
-  return baseCases;
-}
 
 export default function DynamicProgrammingPage() {
   const { levelId } = useParams();
@@ -98,23 +64,18 @@ export default function DynamicProgrammingPage() {
       setLoadingLevel(true);
       try {
         const loadedLevel = await getLevelById(levelId, accessToken);
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         if (loadedLevel.game_type !== "dynamic_programming") {
           setError("Selected level is not a dynamic programming puzzle.");
           return;
         }
         console.debug("dp_level_loaded", { levelId: loadedLevel.id });
         initializeLevel(loadedLevel);
-
-        const levelBaseCases = computeBaseCases(loadedLevel.config);
-        setBaseCases(levelBaseCases);
+        const computedBaseCases = computeBaseCases(loadedLevel.config ?? {});
+        setBaseCases(computedBaseCases);
 
         const session = await startLevelSession(loadedLevel.id, accessToken);
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setSession({ sessionId: session.session_id, expiresIn: session.expires_in });
       } catch (err) {
         if (active) {
@@ -134,21 +95,12 @@ export default function DynamicProgrammingPage() {
   }, [accessToken, initializeLevel, levelId, setBaseCases, setError, setSession]);
 
   useEffect(() => {
-    if (status !== "playing") {
-      return undefined;
-    }
-
-    const timerId = window.setInterval(() => {
-      incrementTimer();
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timerId);
-    };
+    if (status !== "playing") return undefined;
+    const timerId = window.setInterval(() => incrementTimer(), 1000);
+    return () => window.clearInterval(timerId);
   }, [incrementTimer, status]);
 
-  const totalCells = tableRows * tableCols;
-  const cellsFilled = filledCells.length + baseCases.length;
+  const targetSteps = (tableRows * tableCols) - baseCases.length;
 
   const roundStats = useMemo(
     () => [
@@ -156,16 +108,13 @@ export default function DynamicProgrammingPage() {
       { label: "Timer", value: `${elapsedSeconds}s` },
       { label: "Session TTL", value: `${expiresIn}s` },
       { label: "Hints Used", value: hintsUsed },
-      { label: "Target Steps", value: totalCells - baseCases.length }
+      { label: "Target Steps", value: targetSteps }
     ],
-    [baseCases.length, elapsedSeconds, expiresIn, filledCells.length, hintsUsed, totalCells]
+    [elapsedSeconds, expiresIn, filledCells.length, hintsUsed, targetSteps]
   );
 
   async function handleSubmit() {
-    if (!sessionId || !level) {
-      return;
-    }
-
+    if (!sessionId || !level) return;
     setSubmitting(true);
     setError("");
 
@@ -187,17 +136,14 @@ export default function DynamicProgrammingPage() {
         awardedBadges: submission.awarded_badges
       });
     } catch (err) {
-      setError(toActionableError(err, "Unable to submit this solution right now. Try again in a moment."));
+      setError(toActionableError(err, "Unable to submit this DP table right now. Try again in a moment."));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleHint() {
-    if (!sessionId || !level) {
-      return;
-    }
-
+    if (!sessionId || !level) return;
     setLoadingHint(true);
     setError("");
 
@@ -228,16 +174,16 @@ export default function DynamicProgrammingPage() {
   }
 
   if (loadingLevel) {
-    return <PageFeedback panel>Loading dynamic programming level...</PageFeedback>;
+    return <PageFeedback panel>Loading DP level...</PageFeedback>;
   }
 
   return (
     <section className="gameplay-shell dp-mode">
       <GameModeHeader
         tag="Optimization Lab"
-        title={level?.title ?? "Dynamic Programming Challenge"}
-        subtitle="Fill the DP table cell by cell, building optimal substructure solutions with step-validated scoring."
-        modeValue={problemType.replace(/_/g, " ").toUpperCase()}
+        title={level?.title ?? "DP Challenge"}
+        subtitle="Fill the dynamic programming table step by step, using optimal subproblems to construct the final solution."
+        modeValue={problemType ? problemType.replace("_", " ").toUpperCase() : "DP"}
       />
 
       <GameStatsGrid stats={roundStats} />
@@ -245,15 +191,15 @@ export default function DynamicProgrammingPage() {
       <div className="teaching-panel gameplay-teaching-panel">
         <div>
           <span className="label">Problem Type</span>
-          <p>{problemType.replace(/_/g, " ") || "Unknown"}</p>
+          <p>{problemType ? problemType.replace("_", " ") : "Unknown"}</p>
         </div>
         <div>
           <span className="label">Table Dimensions</span>
-          <p>{tableRows} × {tableCols}</p>
+          <p>{tableRows} rows x {tableCols} cols</p>
         </div>
         <div>
-          <span className="label">Cells Filled / Total</span>
-          <p>{cellsFilled} / {totalCells}</p>
+          <span className="label">Progress</span>
+          <p>{filledCells.length} / {targetSteps} cells filled</p>
         </div>
       </div>
 
@@ -267,12 +213,12 @@ export default function DynamicProgrammingPage() {
           config={level?.config ?? {}}
           onFillCell={fillCell}
           disabled={status !== "playing"}
-          hintCell={hintPreview ?? null}
+          hintCell={hintPreview}
         />
       </article>
 
       <div className="gameplay-message-stack">
-        <p className="muted-text gameplay-note">Fill each cell in dependency order to maximize score and stars.</p>
+        <p className="muted-text gameplay-note">Hover over empty cells to see their dependencies based on the recurrence relation.</p>
         {hintMessage ? <p className="muted-text hint-copy">{hintMessage}</p> : null}
         {error ? <PageFeedback variant="error">{error}</PageFeedback> : null}
       </div>
@@ -290,8 +236,8 @@ export default function DynamicProgrammingPage() {
         <button type="button" className="ghost-btn" onClick={handleHint} disabled={loadingHint || status !== "playing"}>
           {loadingHint ? "Loading Hint..." : "Use Hint (-10)"}
         </button>
-        <button type="button" className="primary-btn" disabled={submitting || status !== "playing" || filledCells.length === 0} onClick={handleSubmit}>
-          {submitting ? "Submitting..." : "Submit Solution"}
+        <button type="button" className="primary-btn" disabled={submitting || status !== "playing"} onClick={handleSubmit}>
+          {submitting ? "Submitting..." : "Submit Table"}
         </button>
       </div>
 

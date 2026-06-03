@@ -1,41 +1,5 @@
 import { useState } from "react";
-
 import { getDpDependencies } from "../utils/dp";
-
-function columnHeader(problemType, col, config) {
-  if (problemType === "fibonacci") {
-    return `F(${col})`;
-  }
-  if (problemType === "coin_change") {
-    return `${col}`;
-  }
-  if (problemType === "knapsack") {
-    return `${col}`;
-  }
-  if (problemType === "grid_traveler") {
-    return `${col}`;
-  }
-  return `${col}`;
-}
-
-function rowHeader(problemType, row, config) {
-  if (problemType === "knapsack") {
-    if (row === 0) {
-      return "∅";
-    }
-    const weights = config?.weights ?? [];
-    const values = config?.values ?? [];
-    return `w${weights[row - 1] ?? "?"}v${values[row - 1] ?? "?"}`;
-  }
-  if (problemType === "grid_traveler") {
-    return `${row}`;
-  }
-  return `${row}`;
-}
-
-function findCell(cells, row, col) {
-  return cells.find((c) => c.row === row && c.col === col) ?? null;
-}
 
 export default function DpBoard({
   rows,
@@ -49,107 +13,104 @@ export default function DpBoard({
   hintCell
 }) {
   const [hoveredCell, setHoveredCell] = useState(null);
-  const [inputValues, setInputValues] = useState({});
 
-  const deps = hoveredCell
-    ? getDpDependencies(problemType, hoveredCell.row, hoveredCell.col, config)
-    : [];
+  // Helper to check if a cell is a dependency of the hovered cell
+  const isDependency = (r, c) => {
+    if (!hoveredCell) return false;
+    const deps = getDpDependencies(problemType, hoveredCell.row, hoveredCell.col, config);
+    return deps.some((dep) => dep.row === r && dep.col === c);
+  };
 
-  function isDepCell(row, col) {
-    return deps.some((d) => d.row === row && d.col === col);
-  }
+  const renderCell = (r, c) => {
+    const isBaseCase = baseCases.some((bc) => bc.row === r && bc.col === c);
+    const filled = filledCells.find((fc) => fc.row === r && fc.col === c);
+    const isHint = hintCell && hintCell.row === r && hintCell.col === c;
+    const isDep = isDependency(r, c);
 
-  function handleInputChange(row, col, value) {
-    setInputValues((prev) => ({ ...prev, [`${row}-${col}`]: value }));
-  }
+    let className = "dp-cell";
+    if (isBaseCase) className += " dp-cell-base";
+    else if (filled) className += " dp-cell-filled";
+    if (isHint) className += " dp-cell-hint";
+    if (isDep) className += " dp-cell-dep";
 
-  function handleCommit(row, col) {
-    const key = `${row}-${col}`;
-    const value = inputValues[key];
-    if (value !== undefined && value !== "") {
-      onFillCell(row, col, value);
-      setInputValues((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
+    // Cell content logic
+    if (isBaseCase) {
+      const bcValue = baseCases.find((bc) => bc.row === r && bc.col === c).value;
+      return <td key={`${r}-${c}`} className={className}>{bcValue}</td>;
     }
-  }
-
-  function handleKeyDown(event, row, col) {
-    if (event.key === "Enter") {
-      handleCommit(row, col);
+    if (filled) {
+      return <td key={`${r}-${c}`} className={className}>{filled.value}</td>;
     }
-  }
+
+    // Interactive empty cell
+    return (
+      <td
+        key={`${r}-${c}`}
+        className={className}
+        onMouseEnter={() => setHoveredCell({ row: r, col: c })}
+        onMouseLeave={() => setHoveredCell(null)}
+      >
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[-0-9]*"
+          aria-label={`Cell row ${r} column ${c}`}
+          disabled={disabled}
+          onBlur={(e) => {
+            if (e.target.value !== "") {
+              onFillCell(r, c, e.target.value);
+              e.target.value = "";
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && e.target.value !== "") {
+              onFillCell(r, c, e.target.value);
+              e.target.value = "";
+            }
+          }}
+        />
+      </td>
+    );
+  };
+
+  const renderRowHeaders = (r) => {
+    if (problemType === "knapsack" && r > 0) {
+      const weight = config?.weights?.[r - 1];
+      const val = config?.values?.[r - 1];
+      return <th scope="row">Item {r}<br/>(w:{weight}, v:{val})</th>;
+    }
+    return <th scope="row">Row {r}</th>;
+  };
+
+  const renderColHeaders = () => {
+    const headers = [];
+    headers.push(<th key="empty"></th>); // top-left corner
+    for (let c = 0; c < cols; c++) {
+      if (problemType === "coin_change") {
+        headers.push(<th key={`col-${c}`}>Amt {c}</th>);
+      } else if (problemType === "knapsack") {
+        headers.push(<th key={`col-${c}`}>Cap {c}</th>);
+      } else {
+        headers.push(<th key={`col-${c}`}>Col {c}</th>);
+      }
+    }
+    return <tr>{headers}</tr>;
+  };
 
   return (
-    <section className="dp-board-wrapper" aria-labelledby="dp-board-label">
-      <p id="dp-board-label" className="sr-only">
-        Dynamic programming table. Fill cells with computed values to build the solution.
-      </p>
-      {problemType ? (
-        <p className="dp-problem-label">{problemType.replace(/_/g, " ")}</p>
-      ) : null}
+    <div className="dp-board-wrapper">
+      <div className="dp-problem-label">{problemType.replace("_", " ")}</div>
       <table className="dp-board">
-        <thead>
-          <tr>
-            <th aria-label="Row header" />
-            {Array.from({ length: cols }, (_, colIndex) => (
-              <th key={colIndex}>{columnHeader(problemType, colIndex, config)}</th>
-            ))}
-          </tr>
-        </thead>
+        <thead>{renderColHeaders()}</thead>
         <tbody>
-          {Array.from({ length: rows }, (_, rowIndex) => (
-            <tr key={rowIndex}>
-              <th>{rowHeader(problemType, rowIndex, config)}</th>
-              {Array.from({ length: cols }, (_, colIndex) => {
-                const baseCase = findCell(baseCases, rowIndex, colIndex);
-                const filled = findCell(filledCells, rowIndex, colIndex);
-                const isHint = hintCell && hintCell.row === rowIndex && hintCell.col === colIndex;
-                const isDep = isDepCell(rowIndex, colIndex);
-
-                const classNames = ["dp-cell"];
-                if (baseCase) classNames.push("dp-cell-base");
-                if (filled) classNames.push("dp-cell-filled");
-                if (isHint) classNames.push("dp-cell-hint");
-                if (isDep) classNames.push("dp-cell-dep");
-
-                const isEmpty = !baseCase && !filled;
-
-                return (
-                  <td
-                    key={colIndex}
-                    className={classNames.join(" ")}
-                    onMouseEnter={() => {
-                      if (isEmpty) {
-                        setHoveredCell({ row: rowIndex, col: colIndex });
-                      }
-                    }}
-                    onMouseLeave={() => setHoveredCell(null)}
-                  >
-                    {baseCase ? (
-                      <span>{baseCase.value}</span>
-                    ) : filled ? (
-                      <span>{filled.value}</span>
-                    ) : (
-                      <input
-                        type="number"
-                        aria-label={`Cell row ${rowIndex} column ${colIndex}`}
-                        disabled={disabled}
-                        value={inputValues[`${rowIndex}-${colIndex}`] ?? ""}
-                        onChange={(e) => handleInputChange(rowIndex, colIndex, e.target.value)}
-                        onBlur={() => handleCommit(rowIndex, colIndex)}
-                        onKeyDown={(e) => handleKeyDown(e, rowIndex, colIndex)}
-                      />
-                    )}
-                  </td>
-                );
-              })}
+          {Array.from({ length: rows }).map((_, r) => (
+            <tr key={`row-${r}`}>
+              {renderRowHeaders(r)}
+              {Array.from({ length: cols }).map((_, c) => renderCell(r, c))}
             </tr>
           ))}
         </tbody>
       </table>
-    </section>
+    </div>
   );
 }

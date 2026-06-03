@@ -1,4 +1,4 @@
-export const GAME_MODE_ORDER = ["sorting", "pathfinding", "graph_traversal"];
+export const GAME_MODE_ORDER = ["sorting", "pathfinding", "graph_traversal", "dynamic_programming"];
 
 export const GAME_MODE_META = {
   sorting: {
@@ -36,6 +36,18 @@ export const GAME_MODE_META = {
     headline: "Walk the frontier in the exact order the solver expects.",
     description: "Canonical BFS and DFS drills with replay-backed validation and teaching cues.",
     emptyCopy: "No graph labs are seeded in this environment yet."
+  },
+  dynamic_programming: {
+    key: "dynamic_programming",
+    label: "Dynamic Programming",
+    shortLabel: "DP",
+    accent: "dp",
+    theme: "orange",
+    icon: "🧩",
+    eyebrow: "Optimization lab",
+    headline: "Build optimal substructure solutions step by step.",
+    description: "Tabulation drills across Fibonacci, Coin Change, Knapsack, and Grid Traveler with step-validated scoring.",
+    emptyCopy: "No DP challenges are seeded in this environment yet."
   }
 };
 
@@ -52,6 +64,9 @@ export function gameTypeActionLabel(gameType) {
   }
   if (gameType === "graph_traversal") {
     return "Play Graph";
+  }
+  if (gameType === "dynamic_programming") {
+    return "Play DP";
   }
   return "Play";
 }
